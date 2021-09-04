@@ -1,0 +1,24 @@
+appid: dj00aiZpPUd3ZmhXWkMyUURqcSZzPWNvbnN1bWVyc2VjcmV0Jng9ODA-
+
+curl 'https://map.yahooapis.jp/spatial/V1/shapeSearch?query=%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3&coordinates=139.7297801,35.6646985 139.7297801,35.6659623 139.7312115,35.6659623 139.7312115,35.6646985&appid=dj00aiZpPUd3ZmhXWkMyUURqcSZzPWNvbnN1bWVyc2VjcmV0Jng9ODA-'
+
+
+curl 'https://map.yahooapis.jp/search/local/V1/localSearch?appid=dj00aiZpPUd3ZmhXWkMyUURqcSZzPWNvbnN1bWVyc2VjcmV0Jng9ODA-&query=%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3'
+
+
+
+# 半径3km(最大は20kmと書いているけどそれ以上を指定すると件数が増える)
+curl 'https://map.yahooapis.jp/search/local/V1/localSearch?appid=dj00aiZpPUd3ZmhXWkMyUURqcSZzPWNvbnN1bWVyc2VjcmV0Jng9ODA-&lat=35.665662327484&lon=139.73091159273&dist=3&query=コンビニエンスストア'
+curl 'https://map.yahooapis.jp/search/local/V1/localSearch?appid=dj00aiZpPUd3ZmhXWkMyUURqcSZzPWNvbnN1bWVyc2VjcmV0Jng9ODA-&lat=35.665662327484&lon=139.73091159273&dist=20&query=コンビニエンスストア'
+
+# bbox(矩形範囲)で指定
+curl 'https://map.yahooapis.jp/search/local/V1/localSearch?appid=dj00aiZpPUd3ZmhXWkMyUURqcSZzPWNvbnN1bWVyc2VjcmV0Jng9ODA-&bbox=135,35,136,36&query=コンビニエンスストア'
+
+# カテゴリでコンビニ(0205001)を検索
+curl 'https://map.yahooapis.jp/search/local/V1/localSearch?appid=dj00aiZpPUd3ZmhXWkMyUURqcSZzPWNvbnN1bWVyc2VjcmV0Jng9ODA-&bbox=135,35,136,36&gc=0205001'
+
+
+# detail=simpleで必要な情報(名前、緯度経度)が得られる。
+curl 'https://map.yahooapis.jp/search/local/V1/localSearch?appid=dj00aiZpPUd3ZmhXWkMyUURqcSZzPWNvbnN1bWVyc2VjcmV0Jng9ODA-&bbox=135,35,136,36&gc=0205001&detail=simple'
+
+curl 'https://map.yahooapis.jp/search/local/V1/localSearch?appid=dj00aiZpPUd3ZmhXWkMyUURqcSZzPWNvbnN1bWVyc2VjcmV0Jng9ODA-&bbox=135,35,136,36&gc=0205001&detail=simple&results=100&start=1'

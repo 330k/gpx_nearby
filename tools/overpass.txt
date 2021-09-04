@@ -1,0 +1,45 @@
+docker build . -t 330k/overpass
+docker run -it -v "$(pwd)/data:/data" 330k/overpass
+
+-------------------------------------
+import overpass
+import geojson
+
+api = overpass.API()
+api.timeout = 300
+
+res = api.get("""
+area["name"~"日本"];
+node(area)["shop"="convenience"];
+out;
+(._;>;);
+""")
+
+with open("/data/japan_convenience.json",mode="w") as f:
+  geojson.dump(res,f)
+  
+
+cat japan.geojson | jq '.features | .[] | { id: .id, name: .properties.name, lat: .geometry.coordinates[1], lon: .geometry.coordinates[0] }'
+
+---------------------------------------  
+res = api.get("""
+area["name"~"日本"];
+node(area)["shop"="bicycle"];
+out;
+(._;>;);
+""")
+
+with open("/data/japan_bicycle.json",mode="w") as f:
+  geojson.dump(res,f)
+
+--------------------------------------
+res = api.get("""
+area["name"~"日本"];
+node(area)["highway"="services"];
+out;
+(._;>;);
+""")
+with open("/data/japan_services.json",mode="w") as f:
+  geojson.dump(res,f)
+
+cat japan_services.json | jq  '[.features[] | select(.properties.name) | select(.properties.name | contains("道の駅"))]'

@@ -1,0 +1,1768 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 8.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       157,          7]
+NotebookDataLength[     65696,       1759]
+NotebookOptionsPosition[     63743,       1688]
+NotebookOutlinePosition[     64090,       1703]
+CellTagsIndexPosition[     64047,       1700]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[
+ RowBox[{"SetDirectory", "[", 
+  RowBox[{"NotebookDirectory", "[", "]"}], "]"}]], "Input",
+ CellChangeTimes->{{3.8396528545182543`*^9, 3.839652859183935*^9}}],
+
+Cell[BoxData["\<\"/home/kei/Documents/GitHub/gpx_along/tools/yahoo\"\>"], \
+"Output",
+ CellChangeTimes->{3.8396528598219433`*^9}]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"xmlfiles", "=", 
+   RowBox[{"FileNames", "[", 
+    RowBox[{"\"\<*.xml\>\"", ",", "\"\<xml/\>\"", ",", "Infinity"}], "]"}]}], 
+  ";"}]], "Input",
+ CellChangeTimes->{{3.839652861817215*^9, 3.839652920884925*^9}, {
+  3.839665047928054*^9, 3.8396650483255*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"tmp", "=", 
+   RowBox[{"{", "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"PrintTemporary", "[", 
+   RowBox[{"Dynamic", "[", "status", "]"}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Do", "[", 
+   RowBox[{
+    RowBox[{"Block", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{
+       "xml", ",", "features", ",", "ids", ",", "names", ",", "lonlats", ",", 
+        "lats", ",", "lons"}], "}"}], ",", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"status", "=", 
+        RowBox[{"xmlfiles", "[", 
+         RowBox[{"[", "i", "]"}], "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"xml", "=", 
+        RowBox[{"Import", "[", 
+         RowBox[{
+          RowBox[{"xmlfiles", "[", 
+           RowBox[{"[", "i", "]"}], "]"}], ",", "\"\<XML\>\""}], "]"}]}], ";",
+        "\[IndentingNewLine]", 
+       RowBox[{"features", "=", 
+        RowBox[{"Cases", "[", 
+         RowBox[{"xml", ",", 
+          RowBox[{"XMLElement", "[", 
+           RowBox[{"\"\<Feature\>\"", ",", "_", ",", "_"}], "]"}], ",", 
+          "Infinity"}], "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"ids", "=", 
+        RowBox[{"Cases", "[", 
+         RowBox[{"features", ",", 
+          RowBox[{
+           RowBox[{"XMLElement", "[", 
+            RowBox[{"\"\<Id\>\"", ",", "_", ",", 
+             RowBox[{"{", "id_", "}"}]}], "]"}], "\[Rule]", "id"}], ",", 
+          "Infinity"}], "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"names", "=", 
+        RowBox[{"Cases", "[", 
+         RowBox[{"features", ",", 
+          RowBox[{
+           RowBox[{"XMLElement", "[", 
+            RowBox[{"\"\<Name\>\"", ",", "_", ",", 
+             RowBox[{"{", "name_", "}"}]}], "]"}], "\[Rule]", "name"}], ",", 
+          "Infinity"}], "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"lonlats", "=", 
+        RowBox[{"Cases", "[", 
+         RowBox[{"features", ",", 
+          RowBox[{
+           RowBox[{"XMLElement", "[", 
+            RowBox[{"\"\<Coordinates\>\"", ",", "_", ",", 
+             RowBox[{"{", "lonlat_", "}"}]}], "]"}], "\[RuleDelayed]", 
+           RowBox[{"StringSplit", "[", 
+            RowBox[{"lonlat", ",", "\"\<,\>\""}], "]"}]}], ",", "Infinity"}], 
+         "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"lats", "=", 
+        RowBox[{"lonlats", "[", 
+         RowBox[{"[", 
+          RowBox[{"All", ",", "2"}], "]"}], "]"}]}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"lons", "=", 
+        RowBox[{"lonlats", "[", 
+         RowBox[{"[", 
+          RowBox[{"All", ",", "1"}], "]"}], "]"}]}], ";", 
+       "\[IndentingNewLine]", "\[IndentingNewLine]", 
+       RowBox[{"AppendTo", "[", 
+        RowBox[{"tmp", ",", 
+         RowBox[{"Transpose", "[", 
+          RowBox[{"{", 
+           RowBox[{"ids", ",", "lats", ",", "lons", ",", "names"}], "}"}], 
+          "]"}]}], "]"}], ";"}]}], "\[IndentingNewLine]", "]"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"i", ",", 
+      RowBox[{"Length", "[", "xmlfiles", "]"}]}], "}"}]}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"result", "=", 
+   RowBox[{"Flatten", "[", 
+    RowBox[{"tmp", ",", "1"}], "]"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.83965295451863*^9, 3.839652999150383*^9}, {
+  3.83965346712582*^9, 3.839653598817258*^9}, {3.839653634093152*^9, 
+  3.839653656765744*^9}, {3.839655673933374*^9, 3.839655697281966*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Length", "[", "result", "]"}]], "Input",
+ CellChangeTimes->{{3.8396536663613167`*^9, 3.839653668079496*^9}}],
+
+Cell[BoxData["65273"], "Output",
+ CellChangeTimes->{3.839653668309648*^9, 3.839655707728374*^9, 
+  3.8396717776859818`*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Export", "[", 
+  RowBox[{"\"\<data/yahoo_xml.csv\>\"", ",", "result", ",", "\"\<CSV\>\""}], 
+  "]"}]], "Input",
+ CellChangeTimes->{{3.839653674263431*^9, 3.839653714463303*^9}, {
+  3.839655717367464*^9, 3.8396557199918947`*^9}, {3.8396650602086763`*^9, 
+  3.8396650627031603`*^9}, {3.839671799721517*^9, 3.839671800480384*^9}, {
+  3.8396718455170193`*^9, 3.839671845901903*^9}}],
+
+Cell[BoxData["\<\"data/yahoo_xml.csv\"\>"], "Output",
+ CellChangeTimes->{{3.83965367568507*^9, 3.839653688736861*^9}, 
+   3.839653719753337*^9, {3.839671796229498*^9, 3.839671805448621*^9}, 
+   3.8396718593559217`*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Export", "[", 
+  RowBox[{"\"\<data/yahoo_xml_01.json\>\"", ",", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"{", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"\"\<id\>\"", "\[Rule]", 
+        RowBox[{"#", "[", 
+         RowBox[{"[", "1", "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"\"\<lat\>\"", "\[Rule]", 
+        RowBox[{"ToExpression", "[", 
+         RowBox[{"#", "[", 
+          RowBox[{"[", "2", "]"}], "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"\"\<lon\>\"", "\[Rule]", 
+        RowBox[{"ToExpression", "[", 
+         RowBox[{"#", "[", 
+          RowBox[{"[", "3", "]"}], "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"\"\<name\>\"", "\[Rule]", 
+        RowBox[{"#", "[", 
+         RowBox[{"[", "4", "]"}], "]"}]}]}], "\[IndentingNewLine]", "}"}], 
+     "&"}], "/@", "result"}], ",", "\"\<JSON\>\""}], "]"}]], "Input",
+ CellChangeTimes->{{3.839653847113412*^9, 3.83965385846459*^9}, 
+   3.8396539152184067`*^9, {3.839654117972519*^9, 3.839654149725238*^9}, {
+   3.839654185091633*^9, 3.839654186113299*^9}, {3.839655732559547*^9, 
+   3.8396557332126503`*^9}, {3.839665065484069*^9, 3.839665066752323*^9}, {
+   3.839671807796164*^9, 3.839671808730938*^9}, {3.839671851524781*^9, 
+   3.8396718528300543`*^9}}],
+
+Cell[BoxData["\<\"data/yahoo_xml_01.json\"\>"], "Output",
+ CellChangeTimes->{3.839653923658114*^9, 3.839654154011985*^9, 
+  3.839654193318619*^9, 3.839671816166933*^9, 3.839671865397275*^9}]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+  "(*", " ", "ID\:304c\:540c\:3058\:3082\:306e\:3092\:6392\:9664", " ", 
+   "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"Block", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"tmp", "=", 
+      RowBox[{"SortBy", "[", 
+       RowBox[{"result", ",", 
+        RowBox[{
+         RowBox[{"#", "[", 
+          RowBox[{"[", "1", "]"}], "]"}], "&"}]}], "]"}]}], "}"}], ",", "\n", 
+    
+    RowBox[{
+     RowBox[{"result2", "=", 
+      RowBox[{
+       RowBox[{"Reap", "[", "\[IndentingNewLine]", 
+        RowBox[{
+         RowBox[{"Sow", "[", 
+          RowBox[{"tmp", "[", 
+           RowBox[{"[", "1", "]"}], "]"}], "]"}], ";", "\[IndentingNewLine]", 
+         
+         RowBox[{"Do", "[", "\[IndentingNewLine]", 
+          RowBox[{
+           RowBox[{"If", "[", 
+            RowBox[{
+             RowBox[{
+              RowBox[{"tmp", "[", 
+               RowBox[{"[", 
+                RowBox[{
+                 RowBox[{"i", "-", "1"}], ",", "1"}], "]"}], "]"}], 
+              "\[NotEqual]", 
+              RowBox[{"tmp", "[", 
+               RowBox[{"[", 
+                RowBox[{"i", ",", "1"}], "]"}], "]"}]}], ",", 
+             RowBox[{"Sow", "[", 
+              RowBox[{"tmp", "[", 
+               RowBox[{"[", "i", "]"}], "]"}], "]"}]}], "]"}], ",", 
+           "\[IndentingNewLine]", 
+           RowBox[{"{", 
+            RowBox[{"i", ",", "2", ",", 
+             RowBox[{"Length", "[", "tmp", "]"}]}], "}"}]}], "]"}], ";"}], 
+        "\[IndentingNewLine]", "]"}], "[", 
+       RowBox[{"[", 
+        RowBox[{"2", ",", "1"}], "]"}], "]"}]}], ";"}]}], 
+   "\[IndentingNewLine]", "]"}]}]], "Input",
+ CellChangeTimes->{{3.8396559320049667`*^9, 3.839655944271431*^9}, {
+  3.839656114444715*^9, 3.8396561551674433`*^9}, {3.839661560306837*^9, 
+  3.8396616056621428`*^9}, {3.83967186840453*^9, 3.839671897951624*^9}, {
+  3.839672365727755*^9, 3.839672372564385*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"result2", "//", "Length"}]], "Input",
+ CellChangeTimes->{{3.839656215108872*^9, 3.839656220265205*^9}, 
+   3.8396719257544613`*^9}],
+
+Cell[BoxData["59272"], "Output",
+ CellChangeTimes->{
+  3.839656220557966*^9, 3.8396562724554577`*^9, 3.839661608162737*^9, {
+   3.839671899977427*^9, 3.839671926146096*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Export", "[", 
+  RowBox[{"\"\<data/yahoo_xml_02.json\>\"", ",", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"{", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"\"\<id\>\"", "\[Rule]", 
+        RowBox[{"#", "[", 
+         RowBox[{"[", "1", "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"\"\<lat\>\"", "\[Rule]", 
+        RowBox[{"ToExpression", "[", 
+         RowBox[{"#", "[", 
+          RowBox[{"[", "2", "]"}], "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"\"\<lon\>\"", "\[Rule]", 
+        RowBox[{"ToExpression", "[", 
+         RowBox[{"#", "[", 
+          RowBox[{"[", "3", "]"}], "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"\"\<name\>\"", "\[Rule]", 
+        RowBox[{"#", "[", 
+         RowBox[{"[", "4", "]"}], "]"}]}]}], "\[IndentingNewLine]", "}"}], 
+     "&"}], "/@", "result2"}], ",", "\"\<JSON\>\""}], "]"}]], "Input",
+ CellChangeTimes->{{3.839656494724112*^9, 3.839656497214149*^9}, 
+   3.839665071958522*^9, {3.839671904467643*^9, 3.839671929546713*^9}}],
+
+Cell[BoxData["\<\"data/yahoo_xml_02.json\"\>"], "Output",
+ CellChangeTimes->{
+  3.839656502691765*^9, 3.839661616979108*^9, {3.8396719171210814`*^9, 
+   3.839671934650242*^9}}]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+  "(*", " ", 
+   "\:7a7a\:767d\:3068\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\:306e\:8868\
+\:8a18\:3086\:308c\:3092\:7d71\:4e00", " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"Block", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"tmp1", "=", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"#", "[", 
+            RowBox[{"[", "1", "]"}], "]"}], ",", 
+           RowBox[{"#", "[", 
+            RowBox[{"[", "2", "]"}], "]"}], ",", 
+           RowBox[{"#", "[", 
+            RowBox[{"[", "3", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+           RowBox[{"StringReplace", "[", 
+            RowBox[{
+             RowBox[{"#", "[", 
+              RowBox[{"[", "4", "]"}], "]"}], ",", 
+             RowBox[{"{", "\[IndentingNewLine]", 
+              RowBox[{
+               RowBox[{
+                RowBox[{"Whitespace", ".."}], "\[Rule]", "\"\<\>\""}], ",", 
+               RowBox[{"\"\<\:3000\>\"", "\[Rule]", "\"\<\>\""}], ",", 
+               "\[IndentingNewLine]", 
+               RowBox[{
+               "\"\<\:30bb\:30d6\:30f3\[Hyphen]\:30a4\:30ec\:30d6\:30f3\>\"", 
+                "\[Rule]", 
+                "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+               "\[IndentingNewLine]", 
+               RowBox[{
+               "\"\<\:30bb\:30d6\:30f3-\:30a4\:30ec\:30d6\:30f3\>\"", 
+                "\[Rule]", 
+                "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+               "\[IndentingNewLine]", 
+               RowBox[{
+               "\"\<\:30bb\:30d6\:30f3\:30fb\:30a4\:30ec\:30d6\:30f3\>\"", 
+                "\[Rule]", 
+                "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+               "\[IndentingNewLine]", 
+               RowBox[{
+               "\"\<\:30bb\:30d6\:30f3\:30fc\:30a4\:30ec\:30d6\:30f3\>\"", 
+                "\[Rule]", 
+                "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+               "\[IndentingNewLine]", 
+               RowBox[{
+               "\"\<\:30bb\:30d6\:30f3\[Minus]\:30a4\:30ec\:30d6\:30f3\>\"", 
+                "\[Rule]", 
+                "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+               "\[IndentingNewLine]", 
+               RowBox[{
+               "\"\<\:30bb\:30d6\:30f3\[LongDash]\:30a4\:30ec\:30d6\:30f3\>\"\
+", "\[Rule]", "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}]}], 
+              "\[IndentingNewLine]", "}"}]}], "]"}]}], "}"}], "&"}], "/@", 
+        "result2"}]}], ",", "\[IndentingNewLine]", "tmp2"}], "}"}], ",", 
+    "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"tmp2", "=", 
+      RowBox[{"SortBy", "[", 
+       RowBox[{"tmp1", ",", 
+        RowBox[{
+         RowBox[{"#1", "[", 
+          RowBox[{"[", "4", "]"}], "]"}], "&"}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"result3", "=", 
+      RowBox[{
+       RowBox[{"Reap", "[", "\[IndentingNewLine]", 
+        RowBox[{
+         RowBox[{"Sow", "[", 
+          RowBox[{"tmp2", "[", 
+           RowBox[{"[", "1", "]"}], "]"}], "]"}], ";", "\[IndentingNewLine]", 
+         
+         RowBox[{"Do", "[", "\[IndentingNewLine]", 
+          RowBox[{
+           RowBox[{"If", "[", 
+            RowBox[{
+             RowBox[{
+              RowBox[{"tmp2", "[", 
+               RowBox[{"[", 
+                RowBox[{
+                 RowBox[{"i", "-", "1"}], ",", "4"}], "]"}], "]"}], 
+              "\[NotEqual]", 
+              RowBox[{"tmp2", "[", 
+               RowBox[{"[", 
+                RowBox[{"i", ",", "4"}], "]"}], "]"}]}], ",", 
+             RowBox[{"Sow", "[", 
+              RowBox[{"tmp2", "[", 
+               RowBox[{"[", "i", "]"}], "]"}], "]"}]}], "]"}], 
+           "\[IndentingNewLine]", ",", 
+           RowBox[{"{", 
+            RowBox[{"i", ",", "2", ",", 
+             RowBox[{"Length", "[", "tmp2", "]"}]}], "}"}]}], "]"}]}], "]"}], 
+       "[", 
+       RowBox[{"[", 
+        RowBox[{"2", ",", "1"}], "]"}], "]"}]}], ";"}]}], 
+   "\[IndentingNewLine]", "]"}]}]], "Input",
+ CellChangeTimes->{{3.8396608895439253`*^9, 3.8396609338990717`*^9}, {
+  3.839660965860084*^9, 3.839661019260757*^9}, {3.839661138493178*^9, 
+  3.8396611878893023`*^9}, {3.839661264098646*^9, 3.839661273813548*^9}, {
+  3.8396719805506372`*^9, 3.839672048461816*^9}, {3.839672261244117*^9, 
+  3.839672294771903*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+  "(*", " ", "\:8868\:8a18\:3086\:308c\:7d71\:4e00\:30c1\:30a7\:30c3\:30af", 
+   " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"Select", "[", 
+   RowBox[{"result3", ",", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"StringMatchQ", "[", 
+       RowBox[{
+        RowBox[{"#", "[", 
+         RowBox[{"[", "4", "]"}], "]"}], ",", 
+        RowBox[{"___", "~~", "\"\<\:30bb\:30d6\:30f3\>\"", "~~", "___"}]}], 
+       "]"}], "&&", 
+      RowBox[{"!", 
+       RowBox[{"StringMatchQ", "[", 
+        RowBox[{
+         RowBox[{"#", "[", 
+          RowBox[{"[", "4", "]"}], "]"}], ",", 
+         RowBox[{
+         "___", "~~", "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\"", "~~",
+           "___"}]}], "]"}]}]}], "&"}]}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.8396721458570232`*^9, 3.839672242126635*^9}}],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"\<\"22930070250\"\>", ",", "\<\"34.510949444444\"\>", 
+     ",", "\<\"136.124396944444\"\>", 
+     ",", "\<\"\:30b9\:30c8\:30a2\:30fc\:30c4\:30a6\:30fc\:30bb\:30d6\:30f3\"\
+\>"}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"\<\"20830086089\"\>", ",", "\<\"36.601955833333\"\>", 
+     ",", "\<\"140.543529166667\"\>", 
+     ",", "\<\"\:30b0\:30eb\:30fc\:30d7\:30bb\:30d6\:30f3\:3072\:305f\:3061\
+\:5e97\"\>"}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"\<\"23730046211\"\>", ",", "\<\"34.341537777778\"\>", 
+     ",", "\<\"134.107420833333\"\>", 
+     ",", "\<\"\:30e4\:30de\:30b6\:30ad\:30b7\:30e7\:30c3\:30d7\:30bb\:30d6\
+\:30f3\:30bb\:30d6\:30f3\"\>"}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.8396721684775047`*^9, 3.839672269706708*^9}, 
+   3.839672303352324*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"result3", "//", "Length"}]], "Input",
+ CellChangeTimes->{{3.839661497491246*^9, 3.839661500855433*^9}, {
+  3.839672051374679*^9, 3.839672051499516*^9}}],
+
+Cell[BoxData["47028"], "Output",
+ CellChangeTimes->{{3.8396615010755253`*^9, 3.839661524065744*^9}, 
+   3.839661649335023*^9, 3.839672057244804*^9, 3.839672273605184*^9, 
+   3.8396723045598373`*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Export", "[", 
+  RowBox[{"\"\<data/yahoo_xml_03.json\>\"", ",", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"{", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"\"\<id\>\"", "\[Rule]", 
+        RowBox[{"#", "[", 
+         RowBox[{"[", "1", "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"\"\<lat\>\"", "\[Rule]", 
+        RowBox[{"ToExpression", "[", 
+         RowBox[{"#", "[", 
+          RowBox[{"[", "2", "]"}], "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"\"\<lon\>\"", "\[Rule]", 
+        RowBox[{"ToExpression", "[", 
+         RowBox[{"#", "[", 
+          RowBox[{"[", "3", "]"}], "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{"\"\<name\>\"", "\[Rule]", 
+        RowBox[{"#", "[", 
+         RowBox[{"[", "4", "]"}], "]"}]}]}], "\[IndentingNewLine]", "}"}], 
+     "&"}], "/@", "result3"}], ",", "\"\<JSON\>\""}], "]"}]], "Input",
+ CellChangeTimes->{{3.839661657794539*^9, 3.839661661957333*^9}, 
+   3.8396650751930733`*^9, {3.839672075857263*^9, 3.839672089855686*^9}}],
+
+Cell[BoxData["\<\"data/yahoo_xml_03.json\"\>"], "Output",
+ CellChangeTimes->{
+  3.839661670639051*^9, {3.839672085575131*^9, 3.839672094154798*^9}}]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{"Block", "[", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"tmp", "=", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{
+         RowBox[{"#", "[", 
+          RowBox[{"[", "1", "]"}], "]"}], ",", 
+         RowBox[{"#", "[", 
+          RowBox[{"[", "2", "]"}], "]"}], ",", 
+         RowBox[{"#", "[", 
+          RowBox[{"[", "3", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+         RowBox[{"StringReplace", "[", 
+          RowBox[{
+           RowBox[{"#", "[", 
+            RowBox[{"[", "4", "]"}], "]"}], ",", 
+           RowBox[{"{", "\[IndentingNewLine]", 
+            RowBox[{
+             RowBox[{
+              RowBox[{"Whitespace", ".."}], "\[Rule]", "\"\<\>\""}], ",", 
+             RowBox[{"\"\<\:3000\>\"", "\[Rule]", "\"\<\>\""}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+             "\"\<\:30bb\:30d6\:30f3\[Hyphen]\:30a4\:30ec\:30d6\:30f3\>\"", 
+              "\[Rule]", 
+              "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+             "\"\<\:30bb\:30d6\:30f3-\:30a4\:30ec\:30d6\:30f3\>\"", 
+              "\[Rule]", 
+              "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+             "\"\<\:30bb\:30d6\:30f3\:30fb\:30a4\:30ec\:30d6\:30f3\>\"", 
+              "\[Rule]", 
+              "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+             "\"\<\:30bb\:30d6\:30f3\:30fc\:30a4\:30ec\:30d6\:30f3\>\"", 
+              "\[Rule]", 
+              "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+             "\"\<\:30bb\:30d6\:30f3\[Minus]\:30a4\:30ec\:30d6\:30f3\>\"", 
+              "\[Rule]", 
+              "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+             "\"\<\:30bb\:30d6\:30f3\[LongDash]\:30a4\:30ec\:30d6\:30f3\>\"", 
+              "\[Rule]", 
+              "\"\<\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\>\""}]}], 
+            "\[IndentingNewLine]", "}"}]}], "]"}]}], "}"}], "&"}], "/@", 
+      "result2"}]}], "}"}], ",", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"duplicates", "=", 
+     RowBox[{"Select", "[", 
+      RowBox[{
+       RowBox[{"GatherBy", "[", 
+        RowBox[{"tmp", ",", 
+         RowBox[{
+          RowBox[{"#", "[", 
+           RowBox[{"[", "4", "]"}], "]"}], "&"}]}], "]"}], ",", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Length", "[", "#", "]"}], ">", "1"}], "&"}]}], "]"}]}], 
+    ";"}]}], "\[IndentingNewLine]", "]"}]], "Input",
+ CellChangeTimes->{{3.839671506859325*^9, 3.839671547027248*^9}, {
+   3.839672327364202*^9, 3.839672333641617*^9}, {3.8396724271708193`*^9, 
+   3.8396724450589542`*^9}, {3.839672503834565*^9, 3.83967250594389*^9}, 
+   3.8396725420556517`*^9, {3.839672786399428*^9, 3.839672811378324*^9}, {
+   3.839703371629931*^9, 3.839703404540248*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"duplicates", "//", "Length"}]], "Input",
+ CellChangeTimes->{{3.8396715479048767`*^9, 3.839671550084062*^9}, {
+  3.83967244806945*^9, 3.839672450901148*^9}}],
+
+Cell[BoxData["12219"], "Output",
+ CellChangeTimes->{
+  3.839671550306458*^9, 3.839672454115197*^9, {3.8396725207966757`*^9, 
+   3.839672549761744*^9}, 3.839672819394899*^9, 3.8397034068126907`*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Export", "[", 
+  RowBox[{"\"\<duplicates.csv\>\"", ",", 
+   RowBox[{"Flatten", "/@", "duplicates"}], ",", "\"\<CSV\>\""}], 
+  "]"}]], "Input",
+ CellChangeTimes->{{3.839671561132183*^9, 3.839671577983683*^9}, {
+  3.839672459322608*^9, 3.839672462396895*^9}, {3.83970342369271*^9, 
+  3.83970342835536*^9}, {3.839703532801222*^9, 3.839703535959798*^9}}],
+
+Cell[BoxData["\<\"duplicates.csv\"\>"], "Output",
+ CellChangeTimes->{
+  3.8396715792813683`*^9, 3.8396724639477053`*^9, {3.839672523549493*^9, 
+   3.8396725522805653`*^9}, 3.839672823789526*^9, 3.839703442037141*^9, 
+   3.839703548039337*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"duplicates", "[", 
+  RowBox[{"[", "1", "]"}], "]"}]], "Input",
+ CellChangeTimes->{{3.839703524415015*^9, 3.839703524965008*^9}}],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"\<\"1017\"\>", ",", "\<\"34.68064000631\"\>", 
+     ",", "\<\"135.17305451087\"\>", 
+     ",", "\<\"\:30d5\:30a1\:30df\:30ea\:30fc\:30de\:30fc\:30c8\:795e\:6238\
+\:6a58\:901a\:5e97\"\>"}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"\<\"22830121849\"\>", ",", "\<\"34.680675000000\"\>", 
+     ",", "\<\"135.173043611111\"\>", 
+     ",", "\<\"\:30d5\:30a1\:30df\:30ea\:30fc\:30de\:30fc\:30c8\:795e\:6238\
+\:6a58\:901a\:5e97\"\>"}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{3.8397035252288637`*^9}]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Hubeny", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"lat1_", ",", "lon1_"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"lat2_", ",", "lon2_"}], "}"}]}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"a", "=", "6378137"}], ",", "\[IndentingNewLine]", 
+      RowBox[{"b", "=", "6356752314245*^-6"}], ",", "\[IndentingNewLine]", 
+      "e", ",", "\[IndentingNewLine]", 
+      RowBox[{"rlat1", "=", 
+       RowBox[{"lat1", " ", "Degree"}]}], ",", "\[IndentingNewLine]", 
+      RowBox[{"rlon1", "=", 
+       RowBox[{"lon1", " ", "Degree"}]}], ",", "\[IndentingNewLine]", 
+      RowBox[{"rlat2", "=", 
+       RowBox[{"lat2", " ", "Degree"}]}], ",", "\[IndentingNewLine]", 
+      RowBox[{"rlon2", "=", 
+       RowBox[{"lon2", " ", "Degree"}]}], ",", "\[IndentingNewLine]", 
+      "latdiff", ",", "londiff", ",", "latave", ",", "w", ",", "m", ",", 
+      "n"}], "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"e", "=", 
+      RowBox[{"Sqrt", "[", 
+       RowBox[{"1", "-", 
+        RowBox[{
+         RowBox[{"b", "^", "2"}], "/", 
+         RowBox[{"a", "^", "2"}]}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"latdiff", "=", 
+      RowBox[{"rlat1", "-", "rlat2"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"londiff", "=", 
+      RowBox[{"rlon1", "-", "rlon2"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"latave", "=", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"rlat1", "+", "rlat2"}], ")"}], "/", "2"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"w", "=", 
+      RowBox[{"Sqrt", "[", 
+       RowBox[{"1", "-", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"Sin", "[", "latave", "]"}], "e"}], ")"}], "^", "2"}]}], 
+       "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"m", "=", 
+      RowBox[{"a", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"1", "-", 
+          RowBox[{"e", "^", "2"}]}], ")"}], "/", 
+        RowBox[{"w", "^", "3"}]}]}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"n", "=", 
+      RowBox[{"a", "/", "w"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"Sqrt", "[", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"latdiff", "*", "m"}], ")"}], "^", "2"}], "+", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"londiff", "*", "n", "*", 
+          RowBox[{"Cos", "[", "latave", "]"}]}], ")"}], "^", "2"}]}], 
+      "]"}]}]}], "\[IndentingNewLine]", "]"}]}]], "Input"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"dupdists", "=", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Hubeny", "[", 
+      RowBox[{
+       RowBox[{"ToExpression", "/@", 
+        RowBox[{"#", "[", 
+         RowBox[{"[", 
+          RowBox[{"2", ";;", "3"}], "]"}], "]"}]}], ",", 
+       RowBox[{"ToExpression", "/@", 
+        RowBox[{"#", "[", 
+         RowBox[{"[", 
+          RowBox[{"6", ";;", "7"}], "]"}], "]"}]}]}], "]"}], "&"}], "/@", 
+    "duplicates"}]}], ";"}]], "Input",
+ CellChangeTimes->{{3.839672844887381*^9, 3.839672882437447*^9}, {
+  3.839672928831977*^9, 3.839672941352561*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"{", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"#", "[", 
+       RowBox[{"[", "4", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+      RowBox[{"Hyperlink", "[", 
+       RowBox[{"\"\<\:5730\:70b91\>\"", ",", 
+        RowBox[{"ToString", "@", 
+         RowBox[{"StringForm", "[", 
+          RowBox[{"\"\<https://www.google.co.jp/maps?q=`1`,`2`\>\"", ",", 
+           RowBox[{"#", "[", 
+            RowBox[{"[", "2", "]"}], "]"}], ",", 
+           RowBox[{"#", "[", 
+            RowBox[{"[", "3", "]"}], "]"}]}], "]"}]}]}], "]"}], ",", 
+      "\[IndentingNewLine]", 
+      RowBox[{"Hyperlink", "[", 
+       RowBox[{"\"\<\:5730\:70b92\>\"", ",", 
+        RowBox[{"ToString", "@", 
+         RowBox[{"StringForm", "[", 
+          RowBox[{"\"\<https://www.google.co.jp/maps?q=`1`,`2`\>\"", ",", 
+           RowBox[{"#", "[", 
+            RowBox[{"[", "6", "]"}], "]"}], ",", 
+           RowBox[{"#", "[", 
+            RowBox[{"[", "7", "]"}], "]"}]}], "]"}]}]}], "]"}], ",", 
+      "\[IndentingNewLine]", 
+      RowBox[{"Floor", "[", 
+       RowBox[{"#", "[", 
+        RowBox[{"[", "9", "]"}], "]"}], "]"}]}], "\[IndentingNewLine]", "}"}],
+     "&"}], "/@", 
+   RowBox[{"(", 
+    RowBox[{"Flatten", "/@", 
+     RowBox[{"Select", "[", 
+      RowBox[{
+       RowBox[{"Transpose", "[", 
+        RowBox[{"{", 
+         RowBox[{"duplicates", ",", "dupdists"}], "}"}], "]"}], ",", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"#", "[", 
+          RowBox[{"[", "2", "]"}], "]"}], ">", "10000"}], "&"}]}], "]"}]}], 
+    ")"}]}], "//", "TableForm"}]], "Input",
+ CellChangeTimes->{{3.839672988287241*^9, 3.839673047550394*^9}, {
+  3.839673102645781*^9, 3.839673159031348*^9}, {3.8396739370680103`*^9, 
+  3.839674015849778*^9}, {3.839674101004837*^9, 3.839674374352695*^9}, {
+  3.839674537149488*^9, 3.839674579724221*^9}}],
+
+Cell[BoxData[
+ TagBox[GridBox[{
+    {"\<\"\:4e45\:4fdd\:9152\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=36.566846666667,136.663718055556"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=36.566846666667,136.663718055556"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=36.566846666667,136.663718055556", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=33.388038888889,129.431298333333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=33.388038888889,129.431298333333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=33.388038888889,129.431298333333", 
+       "Hyperlink"]& ], "748676"},
+    {"\<\"\:5de5\:85e4\:9152\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=39.923553333333,141.109917222222"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=39.923553333333,141.109917222222"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=39.923553333333,141.109917222222", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=33.254733888889,131.684661944444"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=33.254733888889,131.684661944444"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=33.254733888889,131.684661944444", 
+       "Hyperlink"]& ], "1122080"},
+    {"\<\"\:ff39\:30b7\:30e7\:30c3\:30d7\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=36.900474166667,140.783232500000"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=36.900474166667,140.783232500000"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=36.900474166667,140.783232500000", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.271743333333,135.407483888889"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.271743333333,135.407483888889"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.271743333333,135.407483888889", 
+       "Hyperlink"]& ], "567844"},
+    {"\<\"\:ff39\:30b7\:30e7\:30c3\:30d7\:9ad8\:6a4b\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=35.738899444444,140.078223333333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=35.738899444444,140.078223333333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=35.738899444444,140.078223333333", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=33.080791666667,131.125594722222"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=33.080791666667,131.125594722222"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=33.080791666667,131.125594722222", 
+       "Hyperlink"]& ], "874315"},
+    {"\<\"\:6709\:9650\:4f1a\:793e\:677e\:4e95\:5546\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=35.692098055556,139.813121666667"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=35.692098055556,139.813121666667"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=35.692098055556,139.813121666667", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.889010833333,137.497648333333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.889010833333,137.497648333333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.889010833333,137.497648333333", 
+       "Hyperlink"]& ], "228695"},
+    {"\<\"\:6709\:9650\:4f1a\:793e\:6cb3\:91ce\:5546\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=43.768886944444,142.329497500000"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=43.768886944444,142.329497500000"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=43.768886944444,142.329497500000", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.671792222222,135.485767222222"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.671792222222,135.485767222222"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.671792222222,135.485767222222", 
+       "Hyperlink"]& ], "1170170"},
+    {"\<\"\:6709\:9650\:4f1a\:793e\:9ad8\:6a4b\:5546\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=43.161930000000,141.914958611111"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=43.161930000000,141.914958611111"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=43.161930000000,141.914958611111", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=33.468191944445,131.692365000000"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=33.468191944445,131.692365000000"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=33.468191944445,131.692365000000", 
+       "Hyperlink"]& ], "1398967"},
+    {"\<\"\:ff39\:30b7\:30e7\:30c3\:30d7\:3059\:305a\:304d\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=35.762362500000,140.227218333333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=35.762362500000,140.227218333333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=35.762362500000,140.227218333333", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=35.150043888889,138.673591666667"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=35.150043888889,138.673591666667"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=35.150043888889,138.673591666667", 
+       "Hyperlink"]& ], "156545"},
+    {"\<\"\:30e2\:30f3\:30de\:30fc\:30c8\:3064\:304b\:3082\:3068\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.975361944444,138.388644722222"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.975361944444,138.388644722222"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.975361944444,138.388644722222", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=32.214661666667,130.757737500000"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=32.214661666667,130.757737500000"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=32.214661666667,130.757737500000", 
+       "Hyperlink"]& ], "771660"},
+    {"\<\"\:30e4\:30de\:30b6\:30ad\:ff39\:30b7\:30e7\:30c3\:30d7\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=35.733986944444,135.097958888889"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=35.733986944444,135.097958888889"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=35.733986944444,135.097958888889", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.624248611111,133.803700277778"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.624248611111,133.803700277778"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.624248611111,133.803700277778", 
+       "Hyperlink"]& ], "170460"},
+    {"\<\"\:30e4\:30de\:30b6\:30ad\:ff39\:30b7\:30e7\:30c3\:30d7\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.624248611111,133.803700277778"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.624248611111,133.803700277778"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.624248611111,133.803700277778", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=33.256898333333,131.011078333333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=33.256898333333,131.011078333333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=33.256898333333,131.011078333333", 
+       "Hyperlink"]& ], "299429"},
+    {"\<\"\:ff39\:30b7\:30e7\:30c3\:30d7\:304b\:3052\:3084\:307e\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.987896666667,134.314438611111"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.987896666667,134.314438611111"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.987896666667,134.314438611111", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.053538888889,134.167565833333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.053538888889,134.167565833333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.053538888889,134.167565833333", 
+       "Hyperlink"]& ], "104523"},
+    {"\<\"\:ff39\:30b7\:30e7\:30c3\:30d7\:3080\:3089\:304b\:307f\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.246526944445,133.148353611111"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.246526944445,133.148353611111"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.246526944445,133.148353611111", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=33.879573333333,130.876662777778"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=33.879573333333,130.876662777778"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=33.879573333333,130.876662777778", 
+       "Hyperlink"]& ], "213628"},
+    {"\<\"\:ff39\:30b7\:30e7\:30c3\:30d7\:308f\:305f\:306a\:3079\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=32.969011111111,130.768664444444"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=32.969011111111,130.768664444444"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=32.969011111111,130.768664444444", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=32.981697500000,131.895584722222"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=32.981697500000,131.895584722222"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=32.981697500000,131.895584722222", 
+       "Hyperlink"]& ], "105352"},
+    {"\<\"\:ff39\:30b7\:30e7\:30c3\:30d7\:5f8c\:85e4\:9152\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=36.062221944444,139.844545277778"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=36.062221944444,139.844545277778"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=36.062221944444,139.844545277778", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=32.682880277778,130.990340555556"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=32.682880277778,130.990340555556"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=32.682880277778,130.990340555556", 
+       "Hyperlink"]& ], "896538"},
+    {"\<\"\:30bb\:30d6\:30f3\:30a4\:30ec\:30d6\:30f3\:4e2d\:5cf6\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=36.949958055556,140.908035000000"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=36.949958055556,140.908035000000"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=36.949958055556,140.908035000000", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=33.122008055556,130.438573333333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=33.122008055556,130.438573333333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=33.122008055556,130.438573333333", 
+       "Hyperlink"]& ], "1045459"},
+    {"\<\"\:3044\:3057\:3065\:3061\:30ca\:30a4\:30c8\:30b7\:30e7\:30c3\:30d7\"\
+\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=32.958886666667,132.583100277778"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=32.958886666667,132.583100277778"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=32.958886666667,132.583100277778", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=32.988639722222,132.937865555556"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=32.988639722222,132.937865555556"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=32.988639722222,132.937865555556", 
+       "Hyperlink"]& ], "33327"},
+    {"\<\"\:30bb\:30a4\:30b3\:30fc\:30de\:30fc\:30c8\:3044\:3057\:3070\:3057\
+\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=43.079504166667,145.097935555556"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=43.079504166667,145.097935555556"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=43.079504166667,145.097935555556", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=36.126777777778,140.442209166667"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=36.126777777778,140.442209166667"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=36.126777777778,140.442209166667", 
+       "Hyperlink"]& ], "869357"},
+    {"\<\"\:30d5\:30a1\:30df\:30ea\:30fc\:30de\:30fc\:30c8\:5cf6\:4e4b\:5185\
+\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.673239722222,135.506543055556"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.673239722222,135.506543055556"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.673239722222,135.506543055556", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=31.988519444444,131.457537777778"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=31.988519444444,131.457537777778"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=31.988519444444,131.457537777778", 
+       "Hyperlink"]& ], "480387"},
+    {"\<\"\:30d5\:30a1\:30df\:30ea\:30fc\:30de\:30fc\:30c8\:9ad8\:677e\:753a\
+\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.654016666667,135.161453333333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.654016666667,135.161453333333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.654016666667,135.161453333333", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.334163611111,134.106418333333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.334163611111,134.106418333333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.334163611111,134.106418333333", 
+       "Hyperlink"]& ], "103193"},
+    {"\<\"\:30d5\:30a1\:30df\:30ea\:30fc\:30de\:30fc\:30c8\:3057\:3076\:305f\
+\:307f\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=39.702056388889,141.154493055556"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=39.702056388889,141.154493055556"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=39.702056388889,141.154493055556", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=39.834739229496,141.15911237967"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=39.834739229496,141.15911237967"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=39.834739229496,141.15911237967", 
+       "Hyperlink"]& ], "14737"},
+    {"\<\"\:30d5\:30a1\:30df\:30ea\:30fc\:30de\:30fc\:30c8\:57ce\:5c71\:516c\
+\:5712\:524d\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=35.641320482068,139.49040563285"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=35.641320482068,139.49040563285"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=35.641320482068,139.49040563285", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=32.580233611111,131.665028333333"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=32.580233611111,131.665028333333"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=32.580233611111,131.665028333333", 
+       "Hyperlink"]& ], "797863"},
+    {"\<\"\:30d5\:30a1\:30df\:30ea\:30fc\:30de\:30fc\:30c8\:5927\:548c\:7530\
+\:99c5\:524d\:5e97\"\>", 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b91\"\>", True->
+        StyleBox["\<\"\:5730\:70b91\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=35.928784512954,139.65011272162"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=35.928784512954,139.65011272162"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=35.928784512954,139.65011272162", 
+       "Hyperlink"]& ], 
+     TagBox[
+      ButtonBox[
+       PaneSelectorBox[{False->"\<\"\:5730\:70b92\"\>", True->
+        StyleBox["\<\"\:5730\:70b92\"\>", "HyperlinkActive"]}, Dynamic[
+         CurrentValue["MouseOver"]],
+        BaseStyle->{"Hyperlink"},
+        BaselinePosition->Baseline,
+        FrameMargins->0,
+        ImageSize->Automatic],
+       BaseStyle->"Hyperlink",
+       ButtonData->{
+         URL[
+         "https://www.google.co.jp/maps?q=34.743447222222,135.602555277778"], 
+         None},
+       ButtonNote->
+        "https://www.google.co.jp/maps?q=34.743447222222,135.602555277778"],
+      Annotation[#, 
+       "https://www.google.co.jp/maps?q=34.743447222222,135.602555277778", 
+       "Hyperlink"]& ], "390770"}
+   },
+   GridBoxAlignment->{
+    "Columns" -> {{Left}}, "ColumnsIndexed" -> {}, "Rows" -> {{Baseline}}, 
+     "RowsIndexed" -> {}},
+   GridBoxSpacings->{"Columns" -> {
+       Offset[0.27999999999999997`], {
+        Offset[2.0999999999999996`]}, 
+       Offset[0.27999999999999997`]}, "ColumnsIndexed" -> {}, "Rows" -> {
+       Offset[0.2], {
+        Offset[0.4]}, 
+       Offset[0.2]}, "RowsIndexed" -> {}}],
+  Function[BoxForm`e$, 
+   TableForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{{3.839673002426594*^9, 3.8396730489113207`*^9}, 
+   3.839673107145626*^9, {3.839673145710215*^9, 3.839673159531139*^9}, {
+   3.839673939076509*^9, 3.839674016224698*^9}, {3.839674115961782*^9, 
+   3.839674157461581*^9}, {3.839674215309074*^9, 3.8396742581738462`*^9}, {
+   3.839674305689391*^9, 3.839674321482151*^9}, {3.8396743621018553`*^9, 
+   3.839674377633572*^9}, {3.8396745494475803`*^9, 3.839674580330607*^9}}]
+}, Open  ]]
+},
+WindowSize->{874, 867},
+WindowMargins->{{Automatic, 331}, {34, Automatic}},
+FrontEndVersion->"8.0 for Linux x86 (64-bit) (2011\:5e7410\:670813\:65e5)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[579, 22, 172, 3, 30, "Input"],
+Cell[754, 27, 129, 2, 30, "Output"]
+}, Open  ]],
+Cell[898, 32, 292, 7, 30, "Input"],
+Cell[1193, 41, 3394, 85, 316, "Input"],
+Cell[CellGroupData[{
+Cell[4612, 130, 132, 2, 30, "Input"],
+Cell[4747, 134, 123, 2, 30, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4907, 141, 402, 7, 30, "Input"],
+Cell[5312, 150, 218, 3, 30, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[5567, 158, 1291, 27, 126, "Input"],
+Cell[6861, 187, 190, 2, 30, "Output"]
+}, Open  ]],
+Cell[7066, 192, 1898, 51, 183, "Input"],
+Cell[CellGroupData[{
+Cell[8989, 247, 155, 3, 30, "Input"],
+Cell[9147, 252, 173, 3, 30, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[9357, 260, 1041, 23, 126, "Input"],
+Cell[10401, 285, 176, 3, 30, "Output"]
+}, Open  ]],
+Cell[10592, 291, 4388, 106, 395, "Input"],
+Cell[CellGroupData[{
+Cell[15005, 401, 836, 23, 100, "Input"],
+Cell[15844, 426, 846, 19, 80, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[16727, 450, 176, 3, 30, "Input"],
+Cell[16906, 455, 198, 3, 30, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[17141, 463, 1043, 23, 126, "Input"],
+Cell[18187, 488, 148, 2, 30, "Output"]
+}, Open  ]],
+Cell[18350, 493, 3088, 73, 257, "Input"],
+Cell[CellGroupData[{
+Cell[21463, 570, 180, 3, 30, "Input"],
+Cell[21646, 575, 197, 3, 30, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[21880, 583, 374, 7, 30, "Input"],
+Cell[22257, 592, 242, 4, 30, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[22536, 601, 152, 3, 30, "Input"],
+Cell[22691, 606, 570, 13, 57, "Output"]
+}, Open  ]],
+Cell[23276, 622, 2523, 67, 354, "Input"],
+Cell[25802, 691, 583, 17, 30, "Input"],
+Cell[CellGroupData[{
+Cell[26410, 712, 1877, 47, 183, "Input"],
+Cell[28290, 761, 35437, 924, 507, "Output"]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)

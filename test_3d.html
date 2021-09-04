@@ -22,9 +22,61 @@ window.addEventListener("DOMContentLoaded", function(){
 });
 
 /**
+ * GPXファイルが選択された→ルート沿いのコンビニを探索表示
+ */
+async function openGPXFile(){
+  try{
+    document.getElementById('loader').style.display = 'block';
+    if(document.getElementById('gpx_file').files.length !== 1){
+      throw new Error('no files selected');
+    }
+    const gpx_file = document.getElementById('gpx_file').files[0];
+    const route_dist_threshold = document.getElementById('route_dist_threshold').value - 0;
+    
+    console.time("readGPX");
+    const gpx = await readGPX(gpx_file);
+    console.timeEnd("readGPX");
+    
+    console.time("createCoursePoints");
+    let coursepoints = createCoursePoints(gpx);
+    console.timeEnd("createCoursePoints");
+    console.log("course points: " + coursepoints.length);
+    
+    console.time("reduceCoursePoints");
+    coursepoints = reduceCoursePoints(coursepoints, 1);
+    console.timeEnd("reduceCoursePoints");
+    console.log("reduced course points: " + coursepoints.length);
+    
+    console.time("getGPXBoundary");
+    const boundary = getGPXBoundary(coursepoints);
+    console.timeEnd("getGPXBoundary");
+    
+    // 矩形領域で大雑把に絞り込む
+    // 外側に求めるルートからの距離相当の角度だけ広げる
+    console.time("getShopListInRect");
+    const shoplist = getShopListInRect(data, boundary, route_dist_threshold * 9e-6, route_dist_threshold * 9e-6 / Math.sin(boundary.maxlat * Math.PI / 180));
+    console.timeEnd("getShopListInRect");
+    console.log("shops in rough rect boundary: " + shoplist.length);
+    
+    console.time("getNearbyShops");
+    const list = getNearbyShops(coursepoints, shoplist, route_dist_threshold, 10000);
+    console.timeEnd("getNearbyShops");
+    console.log(list.length);
+    //console.log(list);
+    
+    outputShopList(list);
+    
+  }catch(err){
+    console.error(err);
+  }finally{
+    document.getElementById('loader').style.display = 'none';
+  }
+}
+
+/**
  * GPXファイルを読み込むPromiseを返す
  * @param {string} file 読み込むファイル
- * @return 読み込んだ結果をXMLObject
+ * @return {XMLDocument} 読み込んだ結果をXMLObjectを返すPromise
  */
 function readGPX(file){
   return new Promise(function(resolve, reject){
@@ -44,53 +96,101 @@ function readGPX(file){
 }
 
 /**
- * GPXファイルが選択された
+ * GPXデータから計算用のコースデータを作成
+ * @param {XMLDocument} gpx
+ * @return {[{lat:number,lon:number,dist:number}]}
  */
-async function openGPXFile(){
-  try{
-    document.getElementById('loader').style.display = 'block';
-    if(document.getElementById('gpx_file').files.length !== 1){
-      throw new Error('no files selected');
+function createCoursePoints(gpx){
+  const trkpts = gpx.querySelectorAll("trkpt");
+  const result = [];
+  let coursedist = 0.0;
+  
+  for(let i = 0; i < trkpts.length; i++){
+    let lat = trkpts[i].getAttribute("lat") - 0;
+    let lon = trkpts[i].getAttribute("lon") - 0;
+    let XYZ = latlon2XYZ(lat, lon);
+    if(i > 0){
+      coursedist += hubeny(result[result.length - 1].lat, result[result.length - 1].lon, lat, lon);
     }
-    console.log(document.getElementById('gpx_file').files);
     
-    const gpx = await readGPX(document.getElementById('gpx_file').files[0]);
-    
-    console.time("getGPXBoundary");
-    const boundary = getGPXBoundary(gpx);
-    console.timeEnd("getGPXBoundary");
-    console.log(boundary);
-    
-    console.time("getShopListInRect");
-    const shoplist2 = getShopListInRect(data, boundary, 0.001);
-    console.timeEnd("getShopListInRect");
-    console.log(shoplist2);
-    
-    console.time("getNearbyShops");
-    const list = getNearbyShops(gpx, shoplist2,  document.getElementById('route_dist_threshold').value - 0);
-    console.timeEnd("getNearbyShops");
-    console.log(list);
-    
-    outputShopList(list);
-    
-  }catch(err){
-    console.log(err.message);
-  }finally{
-    document.getElementById('loader').style.display = 'none';
+    result.push({
+      "lat": lat,
+      "lon": lon,
+      "dist": coursedist,
+      "X": XYZ.X,
+      "Y": XYZ.Y,
+      "Z": XYZ.Z,
+    });
   }
+  
+  return result;
 }
 
-// GPXデータの緯度経度の領域を調べる
-function getGPXBoundary(gpx){
+/**
+ * 3次元Douglas-Peuckerでコースの点を間引く
+ * @param {[{lat:number,lon:number}]} coursepoints コースデータ
+ * @param {number} threshold 許容誤差[m]
+ * @return {[{lat:number,lon:number}]} 間引かれたコースデータ
+ */
+function reduceCoursePoints(coursepoints, threshold){
+  const reducepoints = function(start, end){
+    let maxdist = 0.0;
+    let maxindex = 0;
+    
+    for(let i = start + 1; i < end; i++){
+      let dist = segmentPointDistance3D(
+        coursepoints[start].X, coursepoints[start].Y, coursepoints[start].Z,
+        coursepoints[end].X, coursepoints[end].Y, coursepoints[end].Z,
+        coursepoints[i].X, coursepoints[i].Y, coursepoints[i].Z
+      ).dist;
+      
+      if(dist > maxdist){
+        maxdist = dist;
+        maxindex = i;
+      }
+    }
+    
+    if(maxdist > threshold){
+      resultindexes[maxindex] = true;
+      if(start + 1 < maxindex){
+        reducepoints(start, maxindex);
+      }
+      if(maxindex + 1 < end){
+        reducepoints(maxindex, end);
+      }
+    }
+  };
+  
+  const resultindexes = [];
+  resultindexes.length = coursepoints.length;
+  resultindexes[0] = true;
+  resultindexes[coursepoints.length - 1] = true;
+  
+  reducepoints(0, coursepoints.length - 1);
+  
+  const result = [];
+  for(let i = 0; i < resultindexes.length; i++){
+    if(resultindexes[i]){
+      result.push(coursepoints[i]);
+    }
+  }
+  return result;
+}
+
+/**
+ * GPXデータの緯度経度の領域を調べる
+ * @param {[{lat:number,lon:number}]} coursepoints コースデータ
+ * @return {{minlat:number,maxlat:number,minlon:number,maxlon:number}} 矩形領域
+ */
+function getGPXBoundary(coursepoints){
   let minlat = 90.0;
   let maxlat = -90.0;
   let minlon = 180.0;
   let maxlon = -180.0;
-  const trkpts = gpx.querySelectorAll("trkpt");
   
-  for(const trkpt of trkpts){
-    let lat = trkpt.getAttribute("lat") - 0;
-    let lon = trkpt.getAttribute("lon") - 0;
+  for(const pt of coursepoints){
+    let lat = pt.lat;
+    let lon = pt.lon;
     
     if(lat < minlat){ minlat = lat; }
     if(lat > maxlat){ maxlat = lat; }
@@ -106,80 +206,86 @@ function getGPXBoundary(gpx){
   };
 }
 
-// コンビニデータを緯度経度で絞り込む
-function getShopListInRect(shoplist, boundary, threshold){
-  const minlat = boundary.minlat - threshold;
-  const maxlat = boundary.maxlat + threshold;
-  const minlon = boundary.minlon - threshold;
-  const maxlon = boundary.maxlon + threshold;
+/**
+ * 店舗データを緯度経度で大雑把に絞り込む
+ * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
+ * @param boundary
+ * @param latthreshold 緯度の許容誤差 [deg]
+ * @param lonthreshold 経度の許容誤差 [deg]
+ * @return
+ */
+function getShopListInRect(shoplist, boundary, latthreshold, lonthreshold){
+  const minlat = boundary.minlat - latthreshold;
+  const maxlat = boundary.maxlat + latthreshold;
+  const minlon = boundary.minlon - lonthreshold;
+  const maxlon = boundary.maxlon + lonthreshold;
   
   return shoplist.filter((shop) => (
     (minlat < shop.lat) && (shop.lat < maxlat) && (minlon < shop.lon) && (shop.lon < maxlon)
   ));
 }
 
-// 近傍の店舗を抜き出す
-function getNearbyShops(gpx, shoplist, threshold){
-  const trkpts = gpx.querySelectorAll("trkpt");
-  const points = [];
-  const result = new Map();
-  let coursedist = 0.0;
-  
-  for(const trkpt of trkpts){
-    let lat = trkpt.getAttribute("lat") - 0;
-    let lon = trkpt.getAttribute("lon") - 0;
-    let XYZ = latlon2XYZ(lat, lon);
-    points.push({
-      "lat": lat,
-      "lon": lon,
-      "X": XYZ[0],
-      "Y": XYZ[1],
-      "Z": XYZ[2],
-    });
-  }
+/**
+ * 近傍の店舗を抜き出す
+ * @param {[{lat:number,lon:number}]} coursepoints コースデータ
+ * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
+ * @param {number} threshold ルートからの距離[m]
+ * @param {number} coursedist_threshold 同一の店舗を別物として追加するルート距離[m]
+ */
+function getNearbyShops(coursepoints, shoplist, threshold, coursedist_threshold){
+  const shops1 = new Map();
   
   for(const shop of shoplist){
     let XYZ = latlon2XYZ(shop.lat, shop.lon);
-    shop.X = XYZ[0];
-    shop.Y = XYZ[1];
-    shop.Z = XYZ[2];
+    shop.X = XYZ.X;
+    shop.Y = XYZ.Y;
+    shop.Z = XYZ.Z;
   }
   
-  for(let i = 0; i < points.length - 1; i++){
-    coursedist += hubeny(points[i].lat, points[i].lon, points[i + 1].lat, points[i + 1].lon);
-    
+  for(let i = 0; i < coursepoints.length - 1; i++){
     for(const shop of shoplist){
       let distinfo = segmentPointDistance3D(
-        points[i].X, points[i].Y, points[i].Z,
-        points[i + 1].X, points[i + 1].Y, points[i + 1].Z,
+        coursepoints[i].X, coursepoints[i].Y, coursepoints[i].Z,
+        coursepoints[i + 1].X, coursepoints[i + 1].Y, coursepoints[i + 1].Z,
         shop.X, shop.Y, shop.Z
       );
       let pointdist = distinfo.dist;
       
       if(pointdist < threshold){
-        let flag = false;
-        if(result.has(shop.id)){
-          let prev = result.get(shop.id);
-          if(pointdist < prev.pointdist){
-            flag = true;
+        let coursedist = coursepoints[i].dist + norm3D(coursepoints[i].X, coursepoints[i].Y, coursepoints[i].Z, distinfo.x, distinfo.y, distinfo.z); // 最近傍点のルート距離
+        let currentdata = {
+          "coursedist": coursedist,
+          "lat": shop.lat,
+          "lon": shop.lon,
+          "pointdist": pointdist,
+          "name": shop.name
+        };
+        
+        if(shops1.has(shop.id)){
+          let existinglist = shops1.get(shop.id);
+          if(existinglist[existinglist.length - 1].coursedist + coursedist_threshold < coursedist){
+            // 既存のリストに新規追加
+            existinglist.push(currentdata);
+          }else if(pointdist < existinglist[existinglist.length - 1].pointdist){
+            // 直近の最近傍点の更新
+            existinglist[existinglist.length - 1] = currentdata;
           }
         }else{
-          flag = true;
-        }
-        
-        if(flag){
-          result.set(shop.id, {
-            "coursedist": coursedist + norm3D(points[i].X, points[i].Y, points[i].Z, distinfo.x, distinfo.y, distinfo.z),
-            "lat": shop.lat,
-            "lon": shop.lon,
-            "pointdist": pointdist,
-            "name": shop.name
-          });
+          // 新規作成
+          shops1.set(shop.id, [currentdata]);
         }
       }
     }
   }
   
+  // 距離順にまとめ直す
+  const result = [];
+  for(const a of shops1.keys()){
+    for(const b of shops1.get(a)){
+      result.push(b);
+    }
+  }
+  result.sort((a, b) => (a.coursedist - b.coursedist));
   return result;
 }
 
@@ -221,7 +327,9 @@ function segmentPointDistance3D(ax, ay, az, bx, by, bz, px, py, pz){
   };
 }
 
-// Hubeny
+/**
+ * Hubeny測地線距離計算式
+ */
 const hubeny = (function(){
   const a = 6378137.0;
   const b = 6356752.314245;
@@ -262,16 +370,21 @@ function latlon2XYZ(lat, lon){
   const latrad = lat * degree;
   const lonrad = lon * degree;
   
-  const w2 = 1.0 - Math.sin(latrad) * Math.sin(latrad) * e2;
+  const sinlat = Math.sin(latrad);
+  const coslat = Math.cos(latrad);
+  const sinlon = Math.sin(lonrad);
+  const coslon = Math.cos(lonrad);
+  
+  const w2 = 1.0 - sinlat * sinlat * e2;
   const w = Math.sqrt(w2)
   const N = a / w;
   const h = 0.0;
   
-  return [
-    (N + h) * Math.cos(latrad) * Math.cos(lonrad),
-    (N + h) * Math.cos(latrad) * Math.sin(lonrad),
-    N * f2 * Math.sin(latrad),
-  ];
+  return {
+    "X": (N + h) * coslat * coslon,
+    "Y": (N + h) * coslat * sinlon,
+    "Z": N * f2 * sinlat,
+  };
 }
 
 /**
@@ -286,8 +399,8 @@ function outputShopList(list){
   
   for(const s of list.values()){
     buf.push('<tr>'
-      + '<td align="right">' + (s.coursedist * 0.001).toFixed(3) + '</td>'
-      + '<td align="right">' + s.pointdist.toFixed(2) + '</td>'
+      + '<td align="right">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
+      + '<td align="right">' + s.pointdist.toFixed(0) + '</td>'
       //+ '<td><a href="https://maps.google.co.jp/maps?q=' + s.name + '" target="_blank">' + s.name + '</a></td>'
       + '<td>' + s.name + '</td>'
       + '<td align="right"><a href="https://www.google.co.jp/maps?q=' + s.lat.toFixed(6) + ',' + s.lon.toFixed(6) + '" target="_blank">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</a></td>'

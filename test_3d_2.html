@@ -35,7 +35,7 @@ async function openGPXFile(){
   try{
     document.getElementById("loader").style.display = "block";
     if(document.getElementById("gpx_file").files.length !== 1){
-      throw new Error("no files selected");
+      throw new Error("no files / too many files are selected");
     }
     const gpx_file = document.getElementById("gpx_file").files[0];
     const course_deviation_threshold = document.getElementById("course_deviation_threshold").value - 0;
@@ -59,16 +59,15 @@ async function openGPXFile(){
     console.timeEnd("getGPXBoundary");
     
     // 矩形領域で大雑把に絞り込む
-    // 外側に求めるルートからの距離相当の角度だけ広げる
     console.time("getShopListInRect");
-    const shoplist2 = getShopListInRect(shoplist, boundary, course_deviation_threshold * 9e-6, course_deviation_threshold * 9e-6 / Math.sin(boundary.maxlat * Math.PI / 180));
+    const shoplist2 = getShopListInRect(shoplist, boundary, course_deviation_threshold);
     console.timeEnd("getShopListInRect");
     console.log("shops in rough rect boundary: " + shoplist2.length);
     
     console.time("getNearbyShops");
     const list = getNearbyShops(coursepoints, boundary, shoplist2, course_deviation_threshold, 10000);
     console.timeEnd("getNearbyShops");
-    console.log(list.length);
+    console.log("found shops: " + list.length);
     //console.log(list);
     
     outputShopList(list);
@@ -217,12 +216,13 @@ function getGPXBoundary(coursepoints){
 /**
  * 店舗データを緯度経度で大雑把に絞り込む
  * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
- * @param boundary
- * @param latthreshold 緯度の許容誤差 [deg]
- * @param lonthreshold 経度の許容誤差 [deg]
+ * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} 矩形領域
+ * @param {number} course_deviation_threshold 許容誤差 [m]
  * @return
  */
-function getShopListInRect(shoplist, boundary, latthreshold, lonthreshold){
+function getShopListInRect(shoplist, boundary, course_deviation_threshold){
+  const latthreshold = course_deviation_threshold * 9e-6;
+  const lonthreshold = course_deviation_threshold * 9e-6 / Math.cos(boundary.maxlat * Math.PI / 180);
   const minlat = boundary.minlat - latthreshold;
   const maxlat = boundary.maxlat + latthreshold;
   const minlon = boundary.minlon - lonthreshold;
@@ -236,6 +236,7 @@ function getShopListInRect(shoplist, boundary, latthreshold, lonthreshold){
 /**
  * 近傍の店舗を抜き出す
  * @param {[{lat:number,lon:number}]} coursepoints コースデータ
+ * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} 矩形領域
  * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
  * @param {number} course_deviation_threshold コース-施設間の許容距離[m]
  * @param {number} course_between_threshold 同一の施設を別物として追加するコース距離[m]
@@ -244,9 +245,9 @@ function getShopListInRect(shoplist, boundary, latthreshold, lonthreshold){
 function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_threshold, course_between_threshold){
   const shops_tmp = new Map();
   
-  // Cell Lists Algorithm - 大まかに各線分を分類
+  // Cell Lists Algorithm - 各線分の位置を整数個のcellに分類
   const cell = {}; // 疎になるので配列ではなくハッシュテーブルにする
-  const dlon = course_deviation_threshold * 9e-6 / Math.sin(boundary.maxlat * Math.PI / 180);
+  const dlon = course_deviation_threshold * 9e-6 / Math.cos(boundary.maxlat * Math.PI / 180); // 経度方向のほうが必ず緯度方向よりも大きくなるので、経度を採用
   
   for(let i = 0; i < coursepoints.length - 1; i++){
     const m1 = Math.floor((coursepoints[i].lat - boundary.minlat) / dlon);
@@ -267,15 +268,11 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
     }
   }
   
-  for(const shop of shoplist){
-    const XYZ = latlon2XYZ(shop.lat, shop.lon);
-    shop.X = XYZ.X;
-    shop.Y = XYZ.Y;
-    shop.Z = XYZ.Z;
-  }
-  
   // 各店舗に対してコース上の最近傍点を探索する
   for(const shop of shoplist){
+    // 各店舗の緯度経度を地心直交座標系に変換
+    const XYZ = latlon2XYZ(shop.lat, shop.lon);
+    
     const intervals = [];
     
     {
@@ -285,15 +282,21 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
       const i = Math.floor((shop.lat - boundary.minlat) / dlon);
       const j = Math.floor((shop.lon - boundary.minlon) / dlon);
       
-      if(cell[i - 1] && cell[i - 1][j - 1]){ interval_tmp = interval_tmp.concat(cell[i - 1][j - 1]); }
-      if(cell[i - 1] && cell[i - 1][j    ]){ interval_tmp = interval_tmp.concat(cell[i - 1][j    ]); }
-      if(cell[i - 1] && cell[i - 1][j + 1]){ interval_tmp = interval_tmp.concat(cell[i - 1][j + 1]); }
-      if(cell[i    ] && cell[i    ][j - 1]){ interval_tmp = interval_tmp.concat(cell[i    ][j - 1]); }
-      if(cell[i    ] && cell[i    ][j    ]){ interval_tmp = interval_tmp.concat(cell[i    ][j    ]); }
-      if(cell[i    ] && cell[i    ][j + 1]){ interval_tmp = interval_tmp.concat(cell[i    ][j + 1]); }
-      if(cell[i + 1] && cell[i + 1][j - 1]){ interval_tmp = interval_tmp.concat(cell[i + 1][j - 1]); }
-      if(cell[i + 1] && cell[i + 1][j    ]){ interval_tmp = interval_tmp.concat(cell[i + 1][j    ]); }
-      if(cell[i + 1] && cell[i + 1][j + 1]){ interval_tmp = interval_tmp.concat(cell[i + 1][j + 1]); }
+      if(cell[i - 1]){
+        if(cell[i - 1][j - 1]){ interval_tmp = interval_tmp.concat(cell[i - 1][j - 1]); }
+        if(cell[i - 1][j    ]){ interval_tmp = interval_tmp.concat(cell[i - 1][j    ]); }
+        if(cell[i - 1][j + 1]){ interval_tmp = interval_tmp.concat(cell[i - 1][j + 1]); }
+      }
+      if(cell[i    ]){
+        if(cell[i    ][j - 1]){ interval_tmp = interval_tmp.concat(cell[i    ][j - 1]); }
+        if(cell[i    ][j    ]){ interval_tmp = interval_tmp.concat(cell[i    ][j    ]); }
+        if(cell[i    ][j + 1]){ interval_tmp = interval_tmp.concat(cell[i    ][j + 1]); }
+      }
+      if(cell[i + 1]){
+        if(cell[i + 1][j - 1]){ interval_tmp = interval_tmp.concat(cell[i + 1][j - 1]); }
+        if(cell[i + 1][j    ]){ interval_tmp = interval_tmp.concat(cell[i + 1][j    ]); }
+        if(cell[i + 1][j + 1]){ interval_tmp = interval_tmp.concat(cell[i + 1][j + 1]); }
+      }
       
       // 並び替えて重複を取り除く
       interval_tmp = interval_tmp.sort((a, b) => (a[0].index - b[0].index));
@@ -312,16 +315,16 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
       console.log(intervals);
     }*/
     
-    for(let i = 0; i < intervals.length; i++){
+    for(const interval of intervals){
       const distinfo = segmentPointDistance3D(
-        intervals[i][0].X, intervals[i][0].Y, intervals[i][0].Z,
-        intervals[i][1].X, intervals[i][1].Y, intervals[i][1].Z,
-        shop.X, shop.Y, shop.Z
+        interval[0].X, interval[0].Y, interval[0].Z,
+        interval[1].X, interval[1].Y, interval[1].Z,
+        XYZ.X, XYZ.Y, XYZ.Z
       );
       const pointdist = distinfo.dist;
       
       if(pointdist < course_deviation_threshold){
-        let coursedist = intervals[i][0].dist + norm3D(intervals[i][0].X, intervals[i][0].Y, intervals[i][0].Z, distinfo.x, distinfo.y, distinfo.z); // 最近傍点のコース距離
+        let coursedist = interval[0].dist + norm3D(interval[0].X, interval[0].Y, interval[0].Z, distinfo.x, distinfo.y, distinfo.z); // 最近傍点のコース距離
         let currentdata = {
           "coursedist": coursedist,
           "pointdist": pointdist,
@@ -445,7 +448,7 @@ function latlon2XYZ(lat, lon){
   const w2 = 1.0 - sinlat * sinlat * e2;
   const w = Math.sqrt(w2)
   const N = a / w;
-  const h = 0.0;
+  const h = 0.0; // ジオイド高および標高は0[m]とする
   
   return {
     "X": (N + h) * coslat * coslon,
@@ -491,7 +494,7 @@ function outputShopList(list){
 </script>
 <script defer src="data/yahoo.js"></script>
 <script defer src="data/yahoo_0307003.js"></script>
-<!--<script src="data/osm_japan_convenience_001.js"></script>-->
+<!--<script defer src="data/osm_japan_convenience_001.js"></script>-->
 <!--<link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">-->
 <style>
 table { border-collapse: collapse; }

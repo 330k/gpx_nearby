@@ -2,12 +2,6 @@
 <head>
 <title>GPXデータのルート沿いのコンビニを得る 地心直交座標系</title>
 <script>
-/*data : {
-  "id": id,
-  "lat" : lat,
-  "lon" : lon,
-  name
-}*/
 let shoplist = [];
 
 window.addEventListener("DOMContentLoaded", function(){
@@ -31,7 +25,7 @@ window.addEventListener("DOMContentLoaded", function(){
  * 店舗データ読み込み完了コールバック
  */
 function loaddata(data){
-  shoplist = [...shoplist, ...data];
+  shoplist = shoplist.concat(data);
 }
 
 /**
@@ -127,6 +121,7 @@ function createCoursePoints(gpx){
     }
     
     result.push({
+      "index": i,
       "lat": lat,
       "lon": lon,
       "dist": coursedist,
@@ -250,26 +245,24 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
   const shops1 = new Map();
   
   // Cell Lists Algorithm - 大まかに各線分を分類
-  const cell = {};
+  const cell = {}; // 疎になるので配列ではなくハッシュテーブルにする
   const dlon = course_deviation_threshold * 9e-6 / Math.sin(boundary.maxlat * Math.PI / 180);
   
-  {
-    for(let i = 0; i < coursepoints.length - 1; i++){
-      const m1 = Math.floor((coursepoints[i].lat - boundary.minlat) / dlon);
-      const n1 = Math.floor((coursepoints[i].lon - boundary.minlon) / dlon);
-      const m2 = Math.floor((coursepoints[i + 1].lat - boundary.minlat) / dlon);
-      const n2 = Math.floor((coursepoints[i + 1].lon - boundary.minlon) / dlon);
-        
-      for(let j = Math.min(m1, m2); j <= Math.max(m1, m2); j++){
-        for(let k = Math.min(n1, n2); k <= Math.max(n1, n2); k++){
-          if(!cell[j]){
-            cell[j] = {};
-          }
-          if(!cell[j][k]){
-            cell[j][k] = [];
-          }
-          cell[j][k].push([coursepoints[i], coursepoints[i + 1]]);
+  for(let i = 0; i < coursepoints.length - 1; i++){
+    const m1 = Math.floor((coursepoints[i].lat - boundary.minlat) / dlon);
+    const n1 = Math.floor((coursepoints[i].lon - boundary.minlon) / dlon);
+    const m2 = Math.floor((coursepoints[i + 1].lat - boundary.minlat) / dlon);
+    const n2 = Math.floor((coursepoints[i + 1].lon - boundary.minlon) / dlon);
+      
+    for(let j = Math.min(m1, m2); j <= Math.max(m1, m2); j++){
+      for(let k = Math.min(n1, n2); k <= Math.max(n1, n2); k++){
+        if(!cell[j]){
+          cell[j] = {};
         }
+        if(!cell[j][k]){
+          cell[j][k] = [];
+        }
+        cell[j][k].push([coursepoints[i], coursepoints[i + 1]]);
       }
     }
   }
@@ -281,31 +274,34 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
     shop.Z = XYZ.Z;
   }
   
+  // 各店舗に対してコース上の最近傍点を探索する
   for(const shop of shoplist){
     const intervals = [];
     
     {
-      let points2 = [];
+      // Cell Listから候補となる線分を抜き出す
+      let interval_buf = [];
       
       const i = Math.floor((shop.lat - boundary.minlat) / dlon);
       const j = Math.floor((shop.lon - boundary.minlon) / dlon);
       
-      if(cell[i - 1] && cell[i - 1][j - 1]){ points2 = [...points2, ...cell[i - 1][j - 1]]; }
-      if(cell[i - 1] && cell[i - 1][j    ]){ points2 = [...points2, ...cell[i - 1][j    ]]; }
-      if(cell[i - 1] && cell[i - 1][j + 1]){ points2 = [...points2, ...cell[i - 1][j + 1]]; }
-      if(cell[i    ] && cell[i    ][j - 1]){ points2 = [...points2, ...cell[i    ][j - 1]]; }
-      if(cell[i    ] && cell[i    ][j    ]){ points2 = [...points2, ...cell[i    ][j    ]]; }
-      if(cell[i    ] && cell[i    ][j + 1]){ points2 = [...points2, ...cell[i    ][j + 1]]; }
-      if(cell[i + 1] && cell[i + 1][j - 1]){ points2 = [...points2, ...cell[i + 1][j - 1]]; }
-      if(cell[i + 1] && cell[i + 1][j    ]){ points2 = [...points2, ...cell[i + 1][j    ]]; }
-      if(cell[i + 1] && cell[i + 1][j + 1]){ points2 = [...points2, ...cell[i + 1][j + 1]]; }
-      points2 = points2.sort((a, b) => (a[0].dist - b[0].dist));
+      if(cell[i - 1] && cell[i - 1][j - 1]){ interval_buf = interval_buf.concat(cell[i - 1][j - 1]); }
+      if(cell[i - 1] && cell[i - 1][j    ]){ interval_buf = interval_buf.concat(cell[i - 1][j    ]); }
+      if(cell[i - 1] && cell[i - 1][j + 1]){ interval_buf = interval_buf.concat(cell[i - 1][j + 1]); }
+      if(cell[i    ] && cell[i    ][j - 1]){ interval_buf = interval_buf.concat(cell[i    ][j - 1]); }
+      if(cell[i    ] && cell[i    ][j    ]){ interval_buf = interval_buf.concat(cell[i    ][j    ]); }
+      if(cell[i    ] && cell[i    ][j + 1]){ interval_buf = interval_buf.concat(cell[i    ][j + 1]); }
+      if(cell[i + 1] && cell[i + 1][j - 1]){ interval_buf = interval_buf.concat(cell[i + 1][j - 1]); }
+      if(cell[i + 1] && cell[i + 1][j    ]){ interval_buf = interval_buf.concat(cell[i + 1][j    ]); }
+      if(cell[i + 1] && cell[i + 1][j + 1]){ interval_buf = interval_buf.concat(cell[i + 1][j + 1]); }
       
-      if(points2.length){
-        intervals.push(points2[0]);
-        for(let k = 1; k < points2.length; k++){
-          if(points2[k][0].dist > points2[k - 1][0].dist){
-            intervals.push(points2[k]);
+      // 並び替えて重複を取り除く
+      interval_buf = interval_buf.sort((a, b) => (a[0].index - b[0].index));
+      if(interval_buf.length){
+        intervals.push(interval_buf[0]);
+        for(let k = 1; k < interval_buf.length; k++){
+          if(interval_buf[k - 1][0].index != interval_buf[k][0].index){
+            intervals.push(interval_buf[k]);
           }
         }
       }
@@ -473,7 +469,7 @@ function outputShopList(list){
   };
   
   buf.push('<table class="pure-table pure-table-bordered">');
-  buf.push('<thead><tr><th>ルート距離 [km]</th><th>ルートからの距離 [m]</th><th>店舗名</th><th>緯度・経度</th><th>地図</th></tr></thead>');
+  buf.push('<thead><tr><th>ルート距離 [km]</th><th>ルートからの距離 [m]</th><th>店舗名</th><th>データソース</th><th>緯度・経度</th><th>地図</th></tr></thead>');
   buf.push('<tbody>');
   
   for(const s of list.values()){
@@ -481,7 +477,8 @@ function outputShopList(list){
       + '<td align="right">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
       + '<td align="right">' + s.pointdist.toFixed(0) + '</td>'
       //+ '<td><a href="https://maps.google.co.jp/maps?q=' + s.name + '" target="_blank">' + s.name + '</a></td>'
-      + '<td>' + s.name + '</td>'
+      + '<td align="left" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'
+      + '<td align="left">' + s.source + '</td>'
       + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
       + '<td align="left">' + gmaplink(s.lat, s.lon, s.name, 'G') + ' ' + ymaplink(s.lat, s.lon, s.name, 'Y') + '</td>'
       + '</tr>'
@@ -516,9 +513,9 @@ body { padding: 1em; }
 <form class="pure-form">
 <label>GPXファイル<input type="file" id="gpx_file" accept=".gpx" /></label>
 <label>ルートからの距離<select id="course_deviation_threshold">
-<option value="100">100 m</option>
-<option value="200">200 m</option>
-<option value="300">300 m</option>
+<option value="100">&lt;100 m</option>
+<option value="200">&lt;200 m</option>
+<option value="300">&lt;300 m</option>
 </select></label>
 <button id="copy_clipboard_result" class="pure-button pure-button-primary pure-button-disabled">結果をクリップボードにコピー</button>
 </form>

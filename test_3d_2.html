@@ -242,7 +242,7 @@ function getShopListInRect(shoplist, boundary, latthreshold, lonthreshold){
  * @return {[{coursedist:number,lat:number,lon:number,pointdist:number,name:string}]} コース距離順に並べられた近隣店舗リスト
  */
 function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_threshold, course_between_threshold){
-  const shops1 = new Map();
+  const shops_tmp = new Map();
   
   // Cell Lists Algorithm - 大まかに各線分を分類
   const cell = {}; // 疎になるので配列ではなくハッシュテーブルにする
@@ -280,28 +280,28 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
     
     {
       // Cell Listから候補となる線分を抜き出す
-      let interval_buf = [];
+      let interval_tmp = [];
       
       const i = Math.floor((shop.lat - boundary.minlat) / dlon);
       const j = Math.floor((shop.lon - boundary.minlon) / dlon);
       
-      if(cell[i - 1] && cell[i - 1][j - 1]){ interval_buf = interval_buf.concat(cell[i - 1][j - 1]); }
-      if(cell[i - 1] && cell[i - 1][j    ]){ interval_buf = interval_buf.concat(cell[i - 1][j    ]); }
-      if(cell[i - 1] && cell[i - 1][j + 1]){ interval_buf = interval_buf.concat(cell[i - 1][j + 1]); }
-      if(cell[i    ] && cell[i    ][j - 1]){ interval_buf = interval_buf.concat(cell[i    ][j - 1]); }
-      if(cell[i    ] && cell[i    ][j    ]){ interval_buf = interval_buf.concat(cell[i    ][j    ]); }
-      if(cell[i    ] && cell[i    ][j + 1]){ interval_buf = interval_buf.concat(cell[i    ][j + 1]); }
-      if(cell[i + 1] && cell[i + 1][j - 1]){ interval_buf = interval_buf.concat(cell[i + 1][j - 1]); }
-      if(cell[i + 1] && cell[i + 1][j    ]){ interval_buf = interval_buf.concat(cell[i + 1][j    ]); }
-      if(cell[i + 1] && cell[i + 1][j + 1]){ interval_buf = interval_buf.concat(cell[i + 1][j + 1]); }
+      if(cell[i - 1] && cell[i - 1][j - 1]){ interval_tmp = interval_tmp.concat(cell[i - 1][j - 1]); }
+      if(cell[i - 1] && cell[i - 1][j    ]){ interval_tmp = interval_tmp.concat(cell[i - 1][j    ]); }
+      if(cell[i - 1] && cell[i - 1][j + 1]){ interval_tmp = interval_tmp.concat(cell[i - 1][j + 1]); }
+      if(cell[i    ] && cell[i    ][j - 1]){ interval_tmp = interval_tmp.concat(cell[i    ][j - 1]); }
+      if(cell[i    ] && cell[i    ][j    ]){ interval_tmp = interval_tmp.concat(cell[i    ][j    ]); }
+      if(cell[i    ] && cell[i    ][j + 1]){ interval_tmp = interval_tmp.concat(cell[i    ][j + 1]); }
+      if(cell[i + 1] && cell[i + 1][j - 1]){ interval_tmp = interval_tmp.concat(cell[i + 1][j - 1]); }
+      if(cell[i + 1] && cell[i + 1][j    ]){ interval_tmp = interval_tmp.concat(cell[i + 1][j    ]); }
+      if(cell[i + 1] && cell[i + 1][j + 1]){ interval_tmp = interval_tmp.concat(cell[i + 1][j + 1]); }
       
       // 並び替えて重複を取り除く
-      interval_buf = interval_buf.sort((a, b) => (a[0].index - b[0].index));
-      if(interval_buf.length){
-        intervals.push(interval_buf[0]);
-        for(let k = 1; k < interval_buf.length; k++){
-          if(interval_buf[k - 1][0].index != interval_buf[k][0].index){
-            intervals.push(interval_buf[k]);
+      interval_tmp = interval_tmp.sort((a, b) => (a[0].index - b[0].index));
+      if(interval_tmp.length){
+        intervals.push(interval_tmp[0]);
+        for(let k = 1; k < interval_tmp.length; k++){
+          if(interval_tmp[k - 1][0].index != interval_tmp[k][0].index){
+            intervals.push(interval_tmp[k]);
           }
         }
       }
@@ -328,8 +328,8 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
           ...shop
         };
         
-        if(shops1.has(shop.id)){
-          let existinglist = shops1.get(shop.id);
+        if(shops_tmp.has(shop.id)){
+          let existinglist = shops_tmp.get(shop.id);
           if(existinglist[existinglist.length - 1].coursedist + course_between_threshold < coursedist){
             // 既存のリストに新規追加
             existinglist.push(currentdata);
@@ -339,7 +339,7 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
           }
         }else{
           // 新規作成
-          shops1.set(shop.id, [currentdata]);
+          shops_tmp.set(shop.id, [currentdata]);
         }
       }
     }
@@ -347,8 +347,8 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
   
   // 距離順にまとめ直す
   const result = [];
-  for(const a of shops1.keys()){
-    for(const b of shops1.get(a)){
+  for(const a of shops_tmp.keys()){
+    for(const b of shops_tmp.get(a)){
       result.push(b);
     }
   }
@@ -469,18 +469,17 @@ function outputShopList(list){
   };
   
   buf.push('<table class="pure-table pure-table-bordered">');
-  buf.push('<thead><tr><th>ルート距離 [km]</th><th>ルートからの距離 [m]</th><th>店舗名</th><th>データソース</th><th>緯度・経度</th><th>地図</th></tr></thead>');
+  buf.push('<thead><tr><th>ルート距離 [km]</th><th>ルートからの距離 [m]</th><th>店舗名</th><th>データソース</th><th>地図</th></tr></thead>');
   buf.push('<tbody>');
   
   for(const s of list.values()){
     buf.push('<tr>'
       + '<td align="right">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
       + '<td align="right">' + s.pointdist.toFixed(0) + '</td>'
-      //+ '<td><a href="https://maps.google.co.jp/maps?q=' + s.name + '" target="_blank">' + s.name + '</a></td>'
       + '<td align="left" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'
       + '<td align="left">' + s.source + '</td>'
-      + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
-      + '<td align="left">' + gmaplink(s.lat, s.lon, s.name, 'G') + ' ' + ymaplink(s.lat, s.lon, s.name, 'Y') + '</td>'
+//      + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
+      + '<td align="left">' + gmaplink(s.lat, s.lon, s.name, '地図') + '</td>'
       + '</tr>'
     );
   }
@@ -490,7 +489,7 @@ function outputShopList(list){
   ele.innerHTML = buf.join('\n');
 }
 </script>
-<script src="data/yahoo.js"></script>
+<script defer src="data/yahoo.js"></script>
 <script defer src="data/yahoo_0307003.js"></script>
 <!--<script src="data/osm_japan_convenience_001.js"></script>-->
 <!--<link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">-->
@@ -510,14 +509,29 @@ body { padding: 1em; }
 <body>
 <div id="header">
 <h1>ルート沿い施設検索</h1>
-<form class="pure-form">
-<label>GPXファイル<input type="file" id="gpx_file" accept=".gpx" /></label>
-<label>ルートからの距離<select id="course_deviation_threshold">
-<option value="100">&lt;100 m</option>
-<option value="200">&lt;200 m</option>
-<option value="300">&lt;300 m</option>
-</select></label>
-<button id="copy_clipboard_result" class="pure-button pure-button-primary pure-button-disabled">結果をクリップボードにコピー</button>
+<form class="pure-form pure-form-stacked">
+<div class="pure-g">
+ <div class="pure-u-1-5 pure-u-md-1-5">
+  <legend>GPXファイル</legend>
+  <input type="file" id="gpx_file" accept=".gpx" />
+ </div>
+ <div class="pure-u-1-5 pure-u-md-1-5">
+  <legend>ルートからの距離</legend>
+  <select id="course_deviation_threshold">
+  <option value="100">&lt;100 m</option>
+  <option value="200">&lt;200 m</option>
+  <option value="300">&lt;300 m</option>
+  </select>
+ </div>
+ <div class="pure-u-1-5 pure-u-md-1-5">
+  <legend>検索対象</legend>
+  <label class="pure-checkbox"><input type="checkbox" value="convinience" />コンビニエンスストア</label>
+  <label class="pure-checkbox"><input type="checkbox" value="convinience" />道の駅</label>
+ </div>
+ <div class="pure-u-1-5 pure-u-md-1-5">
+  <button id="copy_clipboard_result" class="pure-button pure-button-primary pure-button-disabled">結果をクリップボードにコピー</button>
+ </div>
+</div>
 </form>
 </div>
 <div id="result"></div>

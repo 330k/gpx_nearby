@@ -3,11 +3,32 @@
 <title>GPXデータのルート沿いのコンビニを得る 地心直交座標系</title>
 <script>
 let shoplist = [];
+let coursepoints = null;
 
 window.addEventListener("DOMContentLoaded", function(){
-  document.getElementById("gpx_file").addEventListener("change", openGPXFile);
-  document.getElementById("course_deviation_threshold").addEventListener("change", openGPXFile);
-  document.getElementById("copy_clipboard_result").addEventListener("click", function(e){
+  document.getElementById("gpx_file").addEventListener("change", async function(evt){console.log(evt);
+    if(evt.target.files.length !== 1){
+      throw new Error("no files / too many files are selected");
+    }
+    const gpx_file = evt.target.files[0];
+    
+    console.time("readGPX");
+    const gpx = await readGPX(gpx_file);
+    console.timeEnd("readGPX");
+    
+    console.time("createCoursePoints");
+    coursepoints = createCoursePoints(gpx);
+    console.timeEnd("createCoursePoints");
+    console.log("course points: " + coursepoints.length);
+    
+    searchNearbyShops();
+  });
+  
+  document.getElementById("course_deviation_threshold").addEventListener("change", function(){
+    searchNearbyShops();
+  });
+  
+  document.getElementById("copy_clipboard_result").addEventListener("click", function(evt){
     try{
       if(navigator.clipboard){
         navigator.clipboard.writeText(document.getElementById("result").textContent);
@@ -16,7 +37,7 @@ window.addEventListener("DOMContentLoaded", function(){
       console.error(err);
     }
     
-    e.preventDefault();
+    evt.preventDefault();
     return false;
   });
 });
@@ -29,25 +50,18 @@ function loaddata(data){
 }
 
 /**
- * GPXファイルが選択された→ルート沿いのコンビニを探索表示
+ * ルート沿いのコンビニを探索し、結果を表示
  */
-async function openGPXFile(){
+function searchNearbyShops(){
   try{
-    document.getElementById("loader").style.display = "block";
-    if(document.getElementById("gpx_file").files.length !== 1){
-      throw new Error("no files / too many files are selected");
+    if(coursepoints === null){
+      throw new Error("no gpx files are selected");
     }
-    const gpx_file = document.getElementById("gpx_file").files[0];
+    
+    document.getElementById("loader").style.display = "block";
     const course_deviation_threshold = document.getElementById("course_deviation_threshold").value - 0;
     
-    console.time("readGPX");
-    const gpx = await readGPX(gpx_file);
-    console.timeEnd("readGPX");
-    
-    console.time("createCoursePoints");
-    let coursepoints = createCoursePoints(gpx);
-    console.timeEnd("createCoursePoints");
-    console.log("course points: " + coursepoints.length);
+    console.time("searchNearbyShops");
     
     console.time("reduceCoursePoints");
     //coursepoints = reduceCoursePoints(coursepoints, 1);
@@ -70,12 +84,16 @@ async function openGPXFile(){
     console.log("found shops: " + list.length);
     //console.log(list);
     
+    console.timeEnd("searchNearbyShops");
+    
     outputShopList(list);
     
   }catch(err){
     console.error(err);
+    
   }finally{
     document.getElementById("loader").style.display = "none";
+    
   }
 }
 
@@ -216,7 +234,7 @@ function getGPXBoundary(coursepoints){
 /**
  * 店舗データを緯度経度で大雑把に絞り込む
  * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
- * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} 矩形領域
+ * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} boundary 矩形領域
  * @param {number} course_deviation_threshold 許容誤差 [m]
  * @return
  */
@@ -236,7 +254,7 @@ function getShopListInRect(shoplist, boundary, course_deviation_threshold){
 /**
  * 近傍の店舗を抜き出す
  * @param {[{lat:number,lon:number}]} coursepoints コースデータ
- * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} 矩形領域
+ * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} boundary 矩形領域
  * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
  * @param {number} course_deviation_threshold コース-施設間の許容距離[m]
  * @param {number} course_between_threshold 同一の施設を別物として追加するコース距離[m]
@@ -351,7 +369,7 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
         if(shops_tmp.has(shop.id)){
           let existinglist = shops_tmp.get(shop.id);
           if(existinglist[existinglist.length - 1].coursedist + course_between_threshold < coursedist){
-            // 既存のリストに新規追加
+            // 既存のリストに追加
             existinglist.push(currentdata);
           }else if(pointdist < existinglist[existinglist.length - 1].pointdist){
             // 直近の最近傍点の更新
@@ -367,10 +385,8 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
   
   // 距離順にまとめ直す
   const result = [];
-  for(const a of shops_tmp.keys()){
-    for(const b of shops_tmp.get(a)){
-      result.push(b);
-    }
+  for(const a of shops_tmp.values()){
+    result.push(...a);
   }
   result.sort((a, b) => (a.coursedist - b.coursedist));
   return result;
@@ -489,7 +505,7 @@ function outputShopList(list){
   };
   
   buf.push('<table class="pure-table pure-table-bordered">');
-  buf.push('<thead><tr><th>ルート距離 [km]</th><th>ルートからの距離 [m]</th><th>店舗名</th><th>データソース</th><th>地図</th></tr></thead>');
+  buf.push('<thead><tr><th>ルート距離 [km]</th><th>ルートからの距離 [m]</th><th>店舗名</th><th>データソース</th><th>カテゴリ</th><th>地図</th></tr></thead>');
   buf.push('<tbody>');
   
   for(const s of list.values()){
@@ -498,6 +514,7 @@ function outputShopList(list){
       + '<td align="right">' + s.pointdist.toFixed(0) + '</td>'
       + '<td align="left" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'
       + '<td align="left">' + s.source + '</td>'
+      + '<td align="left">' + s.category + '</td>'
 //      + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
       + '<td align="left">' + gmaplink(s.lat, s.lon, s.name, '地図') + '</td>'
       + '</tr>'
@@ -509,9 +526,12 @@ function outputShopList(list){
   ele.innerHTML = buf.join('\n');
 }
 </script>
-<script defer src="data/yahoo.js"></script>
-<script defer src="data/yahoo_0307003.js"></script>
+<script defer src="data/yahoo_0205001.js"></script>
+<!--<script defer src="data/yahoo_0304001.js"></script>-->
+<!--<script defer src="data/yahoo_0307003.js"></script>-->
+<script defer src="data/wikipedia_roadstation.js"></script>
 <!--<script defer src="data/osm_japan_convenience_001.js"></script>-->
+<!--<script defer src="data/mlit.js"></script>-->
 <!--<link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">-->
 <style>
 table { border-collapse: collapse; }
@@ -545,8 +565,9 @@ body { padding: 1em; }
  </div>
  <div class="pure-u-1-5 pure-u-md-1-5">
   <legend>検索対象</legend>
-  <label class="pure-checkbox"><input type="checkbox" value="convinience" />コンビニエンスストア</label>
-  <label class="pure-checkbox"><input type="checkbox" value="convinience" />道の駅</label>
+  <label class="pure-checkbox"><input type="checkbox" name="search_target" value="コンビニエンスストア" checked />コンビニエンスストア</label>
+  <label class="pure-checkbox"><input type="checkbox" name="search_target" value="道の駅" checked />道の駅</label>
+  <!--<label class="pure-checkbox"><input type="checkbox" name="search_target" value="ホテル" checked />ホテル</label>-->
  </div>
  <div class="pure-u-1-5 pure-u-md-1-5">
   <button id="copy_clipboard_result" class="pure-button pure-button-primary pure-button-disabled">結果をクリップボードにコピー</button>

@@ -273,40 +273,57 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
     // 各店舗の緯度経度を地心直交座標系に変換
     const XYZ = latlon2XYZ(shop.lat, shop.lon);
     
-    const intervals = [];
+    let intervals = [];
     
     {
       // Cell Listから候補となる線分を抜き出す
-      let interval_tmp = [];
       
-      const i = Math.floor((shop.lat - boundary.minlat) / dlon);
-      const j = Math.floor((shop.lon - boundary.minlon) / dlon);
-      
-      if(cell[i - 1]){
-        if(cell[i - 1][j - 1]){ interval_tmp = interval_tmp.concat(cell[i - 1][j - 1]); }
-        if(cell[i - 1][j    ]){ interval_tmp = interval_tmp.concat(cell[i - 1][j    ]); }
-        if(cell[i - 1][j + 1]){ interval_tmp = interval_tmp.concat(cell[i - 1][j + 1]); }
-      }
-      if(cell[i    ]){
-        if(cell[i    ][j - 1]){ interval_tmp = interval_tmp.concat(cell[i    ][j - 1]); }
-        if(cell[i    ][j    ]){ interval_tmp = interval_tmp.concat(cell[i    ][j    ]); }
-        if(cell[i    ][j + 1]){ interval_tmp = interval_tmp.concat(cell[i    ][j + 1]); }
-      }
-      if(cell[i + 1]){
-        if(cell[i + 1][j - 1]){ interval_tmp = interval_tmp.concat(cell[i + 1][j - 1]); }
-        if(cell[i + 1][j    ]){ interval_tmp = interval_tmp.concat(cell[i + 1][j    ]); }
-        if(cell[i + 1][j + 1]){ interval_tmp = interval_tmp.concat(cell[i + 1][j + 1]); }
-      }
-      
-      // 並び替えて重複を取り除く
-      interval_tmp = interval_tmp.sort((a, b) => (a[0].index - b[0].index));
-      if(interval_tmp.length){
-        intervals.push(interval_tmp[0]);
-        for(let k = 1; k < interval_tmp.length; k++){
-          if(interval_tmp[k - 1][0].index != interval_tmp[k][0].index){
-            intervals.push(interval_tmp[k]);
+      // ソート済みの配列から重複を除きながらマージする
+      const merge = function(a, b){
+        let i = 0;
+        let j = 0;
+        const result = [];
+        
+        while((i < a.length) && (j < b.length)){
+          if(a[i][0].index < b[j][0].index){
+            result.push(a[i]);
+            i++;
+          }else if(a[i][0].index > b[j][0].index){
+            result.push(b[j]);
+            j++;
+          }else{
+            result.push(a[i]);
+            i++;
+            j++;
           }
         }
+        for(i = i; i < a.length; i++){
+          result.push(a[i]);
+        }
+        for(j = j; j < b.length; j++){
+          result.push(b[j]);
+        }
+        
+        return result;
+      };
+      
+      const m = Math.floor((shop.lat - boundary.minlat) / dlon);
+      const n = Math.floor((shop.lon - boundary.minlon) / dlon);
+      
+      if(cell[m - 1]){
+        if(cell[m - 1][n - 1]){ intervals = merge(intervals, cell[m - 1][n - 1]); }
+        if(cell[m - 1][n    ]){ intervals = merge(intervals, cell[m - 1][n    ]); }
+        if(cell[m - 1][n + 1]){ intervals = merge(intervals, cell[m - 1][n + 1]); }
+      }
+      if(cell[m    ]){
+        if(cell[m    ][n - 1]){ intervals = merge(intervals, cell[m    ][n - 1]); }
+        if(cell[m    ][n    ]){ intervals = merge(intervals, cell[m    ][n    ]); }
+        if(cell[m    ][n + 1]){ intervals = merge(intervals, cell[m    ][n + 1]); }
+      }
+      if(cell[m + 1]){
+        if(cell[m + 1][n - 1]){ intervals = merge(intervals, cell[m + 1][n - 1]); }
+        if(cell[m + 1][n    ]){ intervals = merge(intervals, cell[m + 1][n    ]); }
+        if(cell[m + 1][n + 1]){ intervals = merge(intervals, cell[m + 1][n + 1]); }
       }
     }
     

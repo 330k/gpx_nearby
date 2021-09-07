@@ -1,27 +1,38 @@
 <html>
 <head>
-<title>GPXデータのルート沿いのコンビニを得る 地心直交座標系</title>
+<title>GPX ルート沿い施設検索ツール</title>
 <script>
 let shoplist = [];
 let coursepoints = null;
 
 window.addEventListener("DOMContentLoaded", function(){
   document.getElementById("gpx_file").addEventListener("change", async function(evt){console.log(evt);
-    if(evt.target.files.length !== 1){
-      throw new Error("no files / too many files are selected");
+    try{
+      if(evt.target.files.length !== 1){
+        throw new Error("no files / too many files are selected");
+      }
+      const gpx_file = evt.target.files[0];
+      
+      console.time("readGPX");
+      const gpx = await readGPX(gpx_file);
+      console.timeEnd("readGPX");
+      
+      console.time("createCoursePoints");
+      coursepoints = createCoursePoints(gpx);
+      console.timeEnd("createCoursePoints");
+      console.log("course points: " + coursepoints.length);
+      
+      console.time("reduceCoursePoints");
+      coursepoints = reduceCoursePoints(coursepoints, 1);
+      console.timeEnd("reduceCoursePoints");
+      console.log("reduced course points: " + coursepoints.length);
+      
+      searchNearbyShops();
+      
+    }catch(err){
+      console.error(err);
+      
     }
-    const gpx_file = evt.target.files[0];
-    
-    console.time("readGPX");
-    const gpx = await readGPX(gpx_file);
-    console.timeEnd("readGPX");
-    
-    console.time("createCoursePoints");
-    coursepoints = createCoursePoints(gpx);
-    console.timeEnd("createCoursePoints");
-    console.log("course points: " + coursepoints.length);
-    
-    searchNearbyShops();
   });
   
   document.getElementById("course_deviation_threshold").addEventListener("change", function(){
@@ -31,7 +42,7 @@ window.addEventListener("DOMContentLoaded", function(){
   document.getElementById("copy_clipboard_result").addEventListener("click", function(evt){
     try{
       if(navigator.clipboard){
-        navigator.clipboard.writeText(document.getElementById("result").textContent);
+        navigator.clipboard.writeText(createShopListTSV());
       }
     }catch(err){
       console.error(err);
@@ -40,6 +51,8 @@ window.addEventListener("DOMContentLoaded", function(){
     evt.preventDefault();
     return false;
   });
+  
+  document.getElementById("loader").style.display = "none";
 });
 
 /**
@@ -60,13 +73,9 @@ function searchNearbyShops(){
     
     document.getElementById("loader").style.display = "block";
     const course_deviation_threshold = document.getElementById("course_deviation_threshold").value - 0;
+    const course_between_threshold = 10000.0;
     
     console.time("searchNearbyShops");
-    
-    console.time("reduceCoursePoints");
-    //coursepoints = reduceCoursePoints(coursepoints, 1);
-    console.timeEnd("reduceCoursePoints");
-    console.log("reduced course points: " + coursepoints.length);
     
     console.time("getGPXBoundary");
     const boundary = getGPXBoundary(coursepoints);
@@ -79,14 +88,16 @@ function searchNearbyShops(){
     console.log("shops in rough rect boundary: " + shoplist2.length);
     
     console.time("getNearbyShops");
-    const list = getNearbyShops(coursepoints, boundary, shoplist2, course_deviation_threshold, 10000);
+    const nearbylist = getNearbyShops(coursepoints, boundary, shoplist2, course_deviation_threshold, course_between_threshold);
     console.timeEnd("getNearbyShops");
-    console.log("found shops: " + list.length);
-    //console.log(list);
+    console.log("found shops: " + nearbylist.length);
+    //console.log(nearbylist);
     
     console.timeEnd("searchNearbyShops");
     
-    outputShopList(list);
+    outputShopList(nearbylist);
+    
+    document.getElementById("copy_clipboard_result").disabled = false;
     
   }catch(err){
     console.error(err);
@@ -236,7 +247,7 @@ function getGPXBoundary(coursepoints){
  * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
  * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} boundary 矩形領域
  * @param {number} course_deviation_threshold 許容誤差 [m]
- * @return
+ * @return {[{id:string,lat:number,lon:number,name:string}]} 絞り込み後の店舗リスト
  */
 function getShopListInRect(shoplist, boundary, course_deviation_threshold){
   const latthreshold = course_deviation_threshold * 9e-6;
@@ -359,7 +370,8 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
       const pointdist = distinfo.dist;
       
       if(pointdist < course_deviation_threshold){
-        let coursedist = interval[0].dist + norm3D(interval[0].X, interval[0].Y, interval[0].Z, distinfo.x, distinfo.y, distinfo.z); // 最近傍点のコース距離
+        // 最近傍点のコース距離
+        let coursedist = interval[0].dist + Math.sqrt((interval[0].X - distinfo.x) ** 2 + (interval[0].Y - distinfo.y) ** 2 + (interval[0].Z - distinfo.z) ** 2);
         let currentdata = {
           "coursedist": coursedist,
           "pointdist": pointdist,
@@ -390,13 +402,6 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
   }
   result.sort((a, b) => (a.coursedist - b.coursedist));
   return result;
-}
-
-/**
- * 2点間のノルムを与える(3次元)
- */
-function norm3D(ax, ay, az, bx, by, bz){
-  return Math.sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by) + (az - bz) * (az - bz));
 }
 
 /**
@@ -432,6 +437,11 @@ function segmentPointDistance3D(ax, ay, az, bx, by, bz, px, py, pz){
 
 /**
  * Hubeny測地線距離計算式
+ * @param {number} lat1
+ * @param {number} lon1
+ * @param {number} lat2
+ * @param {number} lon2
+ * @return {number} distance [m]
  */
 const hubeny = (function(){
   const a = 6378137.0;
@@ -462,38 +472,46 @@ const hubeny = (function(){
 
 /**
  * 緯度経度から地心直交座標系(X, Y, Z)に変換
+ * @param {number} lat1
+ * @param {number} lon1
+ * @return {{X:number,Y:number,Z:number}}
  */
-function latlon2XYZ(lat, lon){
+const latlon2XYZ = (function(){
   const a = 6378137.0;
   const b = 6356752.314245;
   const f2 = b * b / (a * a);
   const e2 = 1.0 - f2;
   const degree = Math.PI / 180.0;
+  const sin = Math.sin;
+  const cos = Math.cos;
+  const sqrt = Math.sqrt;
   
-  const latrad = lat * degree;
-  const lonrad = lon * degree;
-  
-  const sinlat = Math.sin(latrad);
-  const coslat = Math.cos(latrad);
-  const sinlon = Math.sin(lonrad);
-  const coslon = Math.cos(lonrad);
-  
-  const w2 = 1.0 - sinlat * sinlat * e2;
-  const w = Math.sqrt(w2)
-  const N = a / w;
-  const h = 0.0; // ジオイド高および標高は0[m]とする
-  
-  return {
-    "X": (N + h) * coslat * coslon,
-    "Y": (N + h) * coslat * sinlon,
-    "Z": N * f2 * sinlat,
+  return function(lat, lon){
+    const latrad = lat * degree;
+    const lonrad = lon * degree;
+    
+    const sinlat = sin(latrad);
+    const coslat = cos(latrad);
+    const sinlon = sin(lonrad);
+    const coslon = cos(lonrad);
+    
+    const w2 = 1.0 - sinlat * sinlat * e2;
+    const w = sqrt(w2);
+    const N = a / w;
+    const h = 0.0; // ジオイド高および標高は0[m]とする
+    
+    return {
+      "X": (N + h) * coslat * coslon,
+      "Y": (N + h) * coslat * sinlon,
+      "Z": N * f2 * sinlat,
+    };
   };
-}
+})();
 
 /**
  * 結果を画面に出力
  */
-function outputShopList(list){
+function outputShopList(nearbylist){
   const ele = document.getElementById('result');
   const buf = [];
   
@@ -503,12 +521,15 @@ function outputShopList(list){
   const ymaplink = function(lat, lon, name, text){
     return '<a href="https://map.yahoo.co.jp/search?lat=' + lat.toFixed(6) + '&lon=' + lon.toFixed(6) + '&zoom=16&maptype=basic" target="_blank">' + text + '</a>';
   };
+  const binglink = function(lat, lon, name, text){
+    return '<a href="https://www.bing.com/maps?&cp=' + lat.toFixed(6) + '~' + lon.toFixed(6) + '&lvl=16" target="_blank">' + text + '</a>';
+  }
   
   buf.push('<table class="pure-table pure-table-bordered">');
   buf.push('<thead><tr><th>ルート距離 [km]</th><th>ルートからの距離 [m]</th><th>店舗名</th><th>データソース</th><th>カテゴリ</th><th>地図</th></tr></thead>');
   buf.push('<tbody>');
   
-  for(const s of list.values()){
+  for(const s of nearbylist.values()){
     buf.push('<tr>'
       + '<td align="right">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
       + '<td align="right">' + s.pointdist.toFixed(0) + '</td>'
@@ -516,7 +537,7 @@ function outputShopList(list){
       + '<td align="left">' + s.source + '</td>'
       + '<td align="left">' + s.category + '</td>'
 //      + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
-      + '<td align="left">' + gmaplink(s.lat, s.lon, s.name, '地図') + '</td>'
+      + '<td align="left">' + gmaplink(s.lat, s.lon, s.name, 'GMap') + ' ' + binglink(s.lat, s.lon, s.name, 'Bing') + '</td>'
       + '</tr>'
     );
   }
@@ -524,6 +545,25 @@ function outputShopList(list){
   buf.push('</tbody></table>');
   
   ele.innerHTML = buf.join('\n');
+}
+
+/**
+ * HTMLテーブルの内容をTSVに変換
+ * @return {string}
+ */
+function createShopListTSV(){
+  const buf = [];
+  const ele_result = document.getElementById("result");
+  
+  for(const tr of ele_result.querySelectorAll("tr")){
+    const buf2 = [];
+    for(const td of tr.querySelectorAll("th,td")){
+      buf2.push(td.textContent);
+    }
+    buf.push(buf2.join("\t"));
+  }
+  
+  return buf.join("\n");
 }
 </script>
 <script defer src="data/yahoo_0205001.js"></script>
@@ -533,48 +573,65 @@ function outputShopList(list){
 <!--<script defer src="data/osm_japan_convenience_001.js"></script>-->
 <!--<script defer src="data/mlit.js"></script>-->
 <!--<link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">-->
+<!--<meta name="viewport" content="width=device-width">-->
+<meta name="viewport" content="width=640px">
 <style>
-table { border-collapse: collapse; }
-th, td { border: 1px solid gray; }
 * { margin: 0; padding: 0}
-body { padding: 1em; }
-#loader { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+body { }
+#header { margin: 0.5vw; }
+#header h1 { margin: 0; }
+#header form { display: flex; flex-wrap:wrap; justify-content: space-between; }
+#header form div { }
 
-/*#header { position: fixed; width: 100%; height: 60px; top: 0; background: white; border-bottom: 1px solid gray; z-index: 99999; }
-#result { position: absolute; margin-top: 60px; }
-#result table { width: 100%; }*/
 
+#loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 10px; border-radius: 30px; background: lightgray;}
+
+#result { margin: 0.5vw; }
+table { width: 100%; border-collapse: separate; border-spacing: 0;}
+thead { position: sticky; top: 0; z-index: 1; background: white;}
+tbody { overflow: scroll; }
+th { border: 0.5px solid #ddd; background: #ddd; }
+td { border: 0.5px solid #eee; }
 </style>
 </head>
 <body>
 <div id="header">
-<h1>ルート沿い施設検索</h1>
-<form class="pure-form pure-form-stacked">
-<div class="pure-g">
- <div class="pure-u-1-5 pure-u-md-1-5">
-  <legend>GPXファイル</legend>
-  <input type="file" id="gpx_file" accept=".gpx" />
- </div>
- <div class="pure-u-1-5 pure-u-md-1-5">
-  <legend>ルートからの距離</legend>
-  <select id="course_deviation_threshold">
-  <option value="100">&lt;100 m</option>
-  <option value="200">&lt;200 m</option>
-  <option value="300">&lt;300 m</option>
-  </select>
- </div>
- <div class="pure-u-1-5 pure-u-md-1-5">
-  <legend>検索対象</legend>
-  <label class="pure-checkbox"><input type="checkbox" name="search_target" value="コンビニエンスストア" checked />コンビニエンスストア</label>
-  <label class="pure-checkbox"><input type="checkbox" name="search_target" value="道の駅" checked />道の駅</label>
-  <!--<label class="pure-checkbox"><input type="checkbox" name="search_target" value="ホテル" checked />ホテル</label>-->
- </div>
- <div class="pure-u-1-5 pure-u-md-1-5">
-  <button id="copy_clipboard_result" class="pure-button pure-button-primary pure-button-disabled">結果をクリップボードにコピー</button>
- </div>
-</div>
+<h1>GPX ルート沿い施設検索</h1>
+<form>
+  <div>
+    <label>GPXファイル<input type="file" id="gpx_file" accept=".gpx" /></label>
+  </div>
+  <div>
+    <label>ルートからの距離
+    <select id="course_deviation_threshold">
+    <option value="100">&lt;100 m</option>
+    <option value="200">&lt;200 m</option>
+    <option value="300">&lt;300 m</option>
+    <option value="500">&lt;500 m</option>
+    <option value="1000">&lt;1000 m</option>
+    </select>
+    </label>
+  </div>
+  <div>
+    検索対象
+    <label><input type="checkbox" name="search_target" value="コンビニエンスストア" checked />コンビニエンスストア</label>
+    <label><input type="checkbox" name="search_target" value="道の駅" checked />道の駅</label>
+    <!--<label class="pure-checkbox"><input type="checkbox" name="search_target" value="ホテル" checked />ホテル</label>--></legend>
+  </div>
+  <div>
+    <button id="copy_clipboard_result" disabled>結果をクリップボードにコピー</button>
+  </div>
 </form>
 </div>
-<div id="result"></div>
+<div id="result">
+ <div id="usage">
+  <h2>使い方</h2>
+  <ol>
+   <li>「GPSファイル」をクリックしてルート沿いの施設を検索したGPXファイルを指定してください。</li>
+   <li>ルートからどれだけ離れた施設まで検索するかは「ルートからの距離」を選択することで変更できます。</li>
+   <li>「結果をクリップボードにコピー」ボタンをクリックすると結果の表をExcelやスプレッドシートに貼り付けられる形式でコピーします。</li>
+  </ol>
+ </div>
+</div>
 <div id="loader"><img src="data:image/svg+xml,%3Csvg width='32' height='32' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='xMidYMid' class='uil-spin'%3E%3Cpath fill='none' class='bk' d='M0 0h100v100H0z'/%3E%3Cg transform='translate(84 50)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(45 -52.355 126.397)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.12s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.12s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(90 -17 67)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.25s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.25s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(135 -2.355 42.397)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.37s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.37s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(180 8 25)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.5s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.5s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(-135 18.355 7.603)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.62s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.62s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(-90 33 -17)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.75s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.75s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(-45 68.355 -76.397)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.87s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.87s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3C/svg%3E" width="128" height="128"></div>
 </body>

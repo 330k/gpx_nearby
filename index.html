@@ -526,7 +526,15 @@ function outputShopList(nearbylist){
   }
   
   buf.push('<table class="pure-table pure-table-bordered">');
-  buf.push('<thead><tr><th data-copy="true">ルート距離 [km]</th><th data-copy="true">ルートからの距離 [m]</th><th data-copy="true">施設名</th><th>データソース</th><th>カテゴリ</th><th>地図</th></tr></thead>');
+  buf.push('<thead><tr>');
+  buf.push('<th data-copy="true">ルート距離 [km]</th>');
+  buf.push('<th data-copy="true">ルートからの距離 [m]</th>');
+  buf.push('<th data-copy="true">施設名</th>');
+  buf.push('<th data-copy="true">営業時間</th>');
+  //buf.push('<th>データソース</th>');
+  //buf.push('<th>カテゴリ</th>');
+  buf.push('<th>地図</th>');
+  buf.push('</tr></thead>');
   buf.push('<tbody>');
   
   for(const s of nearbylist.values()){
@@ -534,9 +542,10 @@ function outputShopList(nearbylist){
       + '<td align="right" data-copy="true">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
       + '<td align="right" data-copy="true">' + s.pointdist.toFixed(0) + '</td>'
       + '<td align="left" data-copy="true" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'
-      + '<td align="left">' + s.source + '</td>'
-      + '<td align="left">' + s.category + '</td>'
-//      + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
+      + '<td align="left" data-copy="true">' + (s.open ? s.open : '') + '</td>'
+    //  + '<td align="left">' + s.source + '</td>'
+    //  + '<td align="left">' + s.category + '</td>'
+    //  + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
       + '<td align="left">' + gmaplink(s.lat, s.lon, s.name, 'GMap') + ' ' + binglink(s.lat, s.lon, s.name, 'Bing') + '</td>'
       + '</tr>'
     );

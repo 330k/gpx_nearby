@@ -526,14 +526,14 @@ function outputShopList(nearbylist){
   }
   
   buf.push('<table class="pure-table pure-table-bordered">');
-  buf.push('<thead><tr><th>ルート距離 [km]</th><th>ルートからの距離 [m]</th><th>店舗名</th><th>データソース</th><th>カテゴリ</th><th>地図</th></tr></thead>');
+  buf.push('<thead><tr><th data-copy="true">ルート距離 [km]</th><th data-copy="true">ルートからの距離 [m]</th><th data-copy="true">施設名</th><th>データソース</th><th>カテゴリ</th><th>地図</th></tr></thead>');
   buf.push('<tbody>');
   
   for(const s of nearbylist.values()){
     buf.push('<tr>'
-      + '<td align="right">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
-      + '<td align="right">' + s.pointdist.toFixed(0) + '</td>'
-      + '<td align="left" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'
+      + '<td align="right" data-copy="true">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
+      + '<td align="right" data-copy="true">' + s.pointdist.toFixed(0) + '</td>'
+      + '<td align="left" data-copy="true" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'
       + '<td align="left">' + s.source + '</td>'
       + '<td align="left">' + s.category + '</td>'
 //      + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
@@ -558,9 +558,13 @@ function createShopListTSV(){
   for(const tr of ele_result.querySelectorAll("tr")){
     const buf2 = [];
     for(const td of tr.querySelectorAll("th,td")){
-      buf2.push(td.textContent);
+      if(td.dataset.copy){
+        buf2.push(td.textContent);
+      }
     }
-    buf.push(buf2.join("\t"));
+    if(buf2.length){
+      buf.push(buf2.join("\t"));
+    }
   }
   
   return buf.join("\n");
@@ -582,6 +586,10 @@ body { }
 #header h1 { margin: 0; }
 #header form { display: flex; flex-wrap:wrap; justify-content: space-between; }
 #header form div { }
+
+#usage { margin: 2em; padding: 2em; border-radius: 1em; border: 1px dashed #ddd;}
+#usage h2 { margin: 1em 0 0.5em 0; }
+#usage ol, ul { margin: 0 0 0 2em; }
 
 
 #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 10px; border-radius: 30px; background: lightgray;}
@@ -631,6 +639,11 @@ td { border: 0.5px solid #eee; }
    <li>ルートからどれだけ離れた施設まで検索するかは「ルートからの距離」を選択することで変更できます。</li>
    <li>「結果をクリップボードにコピー」ボタンをクリックすると結果の表をExcelやスプレッドシートに貼り付けられる形式でコピーします。</li>
   </ol>
+  <h2>データソース</h2>
+  <ul>
+   <li>Yahoo</li>
+   <li>Wikipedia</li>
+  </ul>
  </div>
 </div>
 <div id="loader"><img src="data:image/svg+xml,%3Csvg width='32' height='32' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='xMidYMid' class='uil-spin'%3E%3Cpath fill='none' class='bk' d='M0 0h100v100H0z'/%3E%3Cg transform='translate(84 50)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(45 -52.355 126.397)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.12s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.12s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(90 -17 67)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.25s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.25s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(135 -2.355 42.397)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.37s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.37s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(180 8 25)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.5s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.5s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(-135 18.355 7.603)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.62s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.62s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(-90 33 -17)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.75s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.75s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3Cg transform='rotate(-45 68.355 -76.397)'%3E%3Ccircle r='8'%3E%3Canimate attributeName='opacity' from='1' to='.1' begin='0.87s' dur='1s' repeatCount='indefinite'/%3E%3CanimateTransform attributeName='transform' type='scale' from='1.5' to='1' begin='0.87s' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3C/svg%3E" width="128" height="128"></div>

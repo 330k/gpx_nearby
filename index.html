@@ -73,7 +73,8 @@ function searchNearbyShops(){
     
     document.getElementById("loader").style.display = "block";
     const course_deviation_threshold = document.getElementById("course_deviation_threshold").value - 0;
-    const course_between_threshold = 10000.0;
+    const course_between_threshold1 = 1000.0;
+    const course_between_threshold2 = 10000.0;
     
     console.time("searchNearbyShops");
     
@@ -88,7 +89,7 @@ function searchNearbyShops(){
     console.log("shops in rough rect boundary: " + shoplist2.length);
     
     console.time("getNearbyShops");
-    const nearbylist = getNearbyShops(coursepoints, boundary, shoplist2, course_deviation_threshold, course_between_threshold);
+    const nearbylist = getNearbyShops(coursepoints, boundary, shoplist2, course_deviation_threshold, course_between_threshold1, course_between_threshold2);
     console.timeEnd("getNearbyShops");
     console.log("found shops: " + nearbylist.length);
     //console.log(nearbylist);
@@ -268,11 +269,12 @@ function getShopListInRect(shoplist, boundary, course_deviation_threshold){
  * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} boundary 矩形領域
  * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
  * @param {number} course_deviation_threshold コース-施設間の許容距離[m]
- * @param {number} course_between_threshold 同一の施設を別物として追加するコース距離[m]
+ * @param {number} course_between_threshold1 同一の施設を同一の区間として結合して扱うコース距離[m]
+ * @param {number} course_between_threshold2 同一の施設を別物として追加するコース距離[m]
  * @return {[{coursedist:number,lat:number,lon:number,pointdist:number,name:string}]} コース距離順に並べられた近隣店舗リスト
  */
-function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_threshold, course_between_threshold){
-  const shops_tmp = new Map();
+function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_threshold, course_between_threshold1, course_between_threshold2){
+  const result = [];
   
   // Cell Lists Algorithm - 各線分の位置を整数個のcellに分類
   const cell = {}; // 疎になるので配列ではなくハッシュテーブルにする
@@ -301,6 +303,8 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
   for(const shop of shoplist){
     // 各店舗の緯度経度を地心直交座標系に変換
     const XYZ = latlon2XYZ(shop.lat, shop.lon);
+    // 出力する区間の候補
+    const candidates = [];
     
     let intervals = [];
     
@@ -356,11 +360,6 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
       }
     }
     
-    /*if(intervals.length){
-      console.log(shop);
-      console.log(intervals);
-    }*/
-    
     for(const interval of intervals){
       const distinfo = segmentPointDistance3D(
         interval[0].X, interval[0].Y, interval[0].Z,
@@ -372,34 +371,52 @@ function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_thres
       if(pointdist < course_deviation_threshold){
         // 最近傍点のコース距離
         let coursedist = interval[0].dist + Math.sqrt((interval[0].X - distinfo.x) ** 2 + (interval[0].Y - distinfo.y) ** 2 + (interval[0].Z - distinfo.z) ** 2);
-        let currentdata = {
-          "coursedist": coursedist,
-          "pointdist": pointdist,
-          ...shop
-        };
-        
-        if(shops_tmp.has(shop.id)){
-          let existinglist = shops_tmp.get(shop.id);
-          if(existinglist[existinglist.length - 1].coursedist + course_between_threshold < coursedist){
-            // 既存のリストに追加
-            existinglist.push(currentdata);
-          }else if(pointdist < existinglist[existinglist.length - 1].pointdist){
-            // 直近の最近傍点の更新
-            existinglist[existinglist.length - 1] = currentdata;
+        if((candidates.length) && (candidates[candidates.length - 1].end_dist + course_between_threshold1 > coursedist)){
+          // 既存の最後の区間からcourse_between_threshold1以内であれば、結合して扱うので、既存の候補区間を更新
+          let c = candidates[candidates.length - 1];
+          c.end = interval[1].index;
+          c.end_dist = interval[1].dist;
+          if(c.nearest_point_dist > pointdist){
+            c.nearest_point_dist = pointdist;
+            c.nearest_course_dist = coursedist;
           }
         }else{
-          // 新規作成
-          shops_tmp.set(shop.id, [currentdata]);
+          // 新たな候補区間を作成
+          candidates.push({
+            "start": interval[0].index,
+            "start_dist": interval[0].dist,
+            "end": interval[1].index,
+            "end_dist": interval[1].dist,
+            "nearest_course_dist": coursedist,
+            "nearest_point_dist": pointdist
+          });
+        }
+      }
+    }
+    
+    // 候補区間から間隔が短すぎる(course_between_threshold2以内)ものを除外
+    if(candidates.length){
+      //console.log(candidates);
+      result.push({
+        "coursedist": candidates[0].nearest_course_dist,
+        "pointdist": candidates[0].nearest_point_dist,
+        ...shop
+      });
+      let last_course_dist = candidates[0].nearest_course_dist;
+      for(let i = 1; i < candidates.length; i++){
+        if(last_course_dist + course_between_threshold2 < candidates[i].nearest_course_dist){
+          last_course_dist = candidates[i].nearest_course_dist;
+          result.push({
+            "coursedist": candidates[i].nearest_course_dist,
+            "pointdist": candidates[i].nearest_point_dist,
+            ...shop
+          });
         }
       }
     }
   }
   
-  // 距離順にまとめ直す
-  const result = [];
-  for(const a of shops_tmp.values()){
-    result.push(...a);
-  }
+  // 距離順にソートして完了
   result.sort((a, b) => (a.coursedist - b.coursedist));
   return result;
 }
@@ -515,15 +532,16 @@ function outputShopList(nearbylist){
   const ele = document.getElementById('result');
   const buf = [];
   
-  const gmaplink = function(lat, lon, name, text){
-    return '<a href="https://www.google.co.jp/maps?q=' + lat.toFixed(6) + ',' + lon.toFixed(6) + '" target="_blank" class="googlemap">' + '</a>';
+  const gmaplink = function(s){
+    return '<a href="https://www.google.co.jp/maps?q=' + s.lat.toFixed(6) + ',' + s.lon.toFixed(6) + '" target="_blank" class="googlemap">' + '</a>';
   };
-  const ymaplink = function(lat, lon, name, text){
-    return '<a href="https://map.yahoo.co.jp/search?lat=' + lat.toFixed(6) + '&lon=' + lon.toFixed(6) + '&zoom=16&maptype=basic" target="_blank">' + text + '</a>';
+  const ylocolink = function(s){
+    if(s.url){
+      return '<a href="' + s.url + '" target="_blank" class="yahooloco">Y</a>';
+    }else{
+      return '';
+    }
   };
-  const binglink = function(lat, lon, name, text){
-    return '<a href="https://www.bing.com/maps?&cp=' + lat.toFixed(6) + '~' + lon.toFixed(6) + '&lvl=16" target="_blank">' + text + '</a>';
-  }
   
   buf.push('<table class="pure-table pure-table-bordered">');
   buf.push('<thead><tr>');
@@ -533,7 +551,8 @@ function outputShopList(nearbylist){
   buf.push('<th data-copy="true">営業時間</th>');
   //buf.push('<th>データソース</th>');
   //buf.push('<th>カテゴリ</th>');
-  buf.push('<th>地図</th>');
+  //buf.push('<th>緯度経度</th>');
+  buf.push('<th>情報</th>');
   buf.push('</tr></thead>');
   buf.push('<tbody>');
   
@@ -546,7 +565,7 @@ function outputShopList(nearbylist){
     //  + '<td align="left">' + s.source + '</td>'
     //  + '<td align="left">' + s.category + '</td>'
     //  + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
-      + '<td align="center">' + gmaplink(s.lat, s.lon, s.name, 'GMap') + '</td>'
+      + '<td align="center">' + ylocolink(s) + ' ' + gmaplink(s) + '</td>'
       + '</tr>'
     );
   }
@@ -580,7 +599,7 @@ function createShopListTSV(){
 }
 </script>
 <script defer src="data/yahoo_0205001.js"></script>
-<script defer src="data/yahoo_0205002.js"></script>
+<!--<script defer src="data/yahoo_0205002.js"></script>-->
 <!--<script defer src="data/yahoo_0202001.js"></script>-->
 <!--<script defer src="data/yahoo_0304001.js"></script>-->
 <!--<script defer src="data/yahoo_0307003.js"></script>-->
@@ -612,8 +631,8 @@ tbody { overflow: scroll; }
 th { border: 0.5px solid #ddd; background: #ddd; }
 td { border: 0.5px solid #eee; }
 
-
-.googlemap { display: block; width: 1em; height: 1em; background-size: 1em; background-image: url("data:image/svg+xml,%0A%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 32 32'%3E%3Cg fill-rule='evenodd'%3E%3Cpath d='M.273 29.123V6.347a2.4 2.4 0 0 1 2.398-2.399h22.775z' fill='%231ea361'/%3E%3Cpath d='M.273 29.6v-.478L25.447 3.95h.478a2.4 2.4 0 0 1 2.399 2.398v.48L3.15 32H2.67a2.4 2.4 0 0 1-2.398-2.399' fill='%23fedb43'/%3E%3Cpath d='M3.15 32L14.3 20.852 25.447 32z' fill='%235384c4'/%3E%3Cpath d='M25.447 32L14.298 20.85l2.876-2.877 11.15 11.15v.478A2.4 2.4 0 0 1 25.925 32h-.478z' fill='%23fff'/%3E%3Cpath d='M28.324 29.123l-11.15-11.15 11.15-11.15z' fill='%23c2c2c1'/%3E%3C/g%3E%3Cpath d='M5.276 7.05c1.427-.653 3.213-.387 4.372.682l-1.108 1.1c-1.16-1.15-3.337-.605-3.88.917-.7 1.498.47 3.467 2.14 3.488 1.093.127 2.184-.605 2.415-1.694-.764.001-1.526-.006-2.288.006l-.014-1.413 3.84.052c.096.933.03 1.923-.472 2.74-.787 1.464-2.644 2.104-4.216 1.734-1.943-.403-3.397-2.396-3.132-4.37C3.068 8.9 4 7.627 5.276 7.05' fill='%23efefef'/%3E%3Cpath d='M23.424 0h.912c2.273.13 4.495 1.24 5.872 3.067.902 1.154 1.406 2.586 1.52 4.04v.54c-.053 2.82-1.857 5.134-3.42 7.327-1.754 2.478-3.374 5.18-3.824 8.233-.12.517.024 1.242-.594 1.475-.145-.113-.315-.207-.417-.365-.183-1.707-.6-3.394-1.338-4.953-.827-1.817-1.977-3.46-3.147-5.065-.712-.963-1.383-1.96-1.938-3.024-.872-1.593-1.197-3.475-.84-5.262.292-1.4 1.03-2.72 2.053-3.73C19.64.936 21.503.12 23.424 0m-.177 4.966c-1.078.24-1.983 1.194-2.074 2.3a2.61 2.61 0 0 0 1.426 2.552 2.85 2.85 0 0 0 3.179-.401 2.59 2.59 0 0 0 .663-2.873c-.487-1.218-1.93-1.912-3.194-1.6' fill='%23dc4b3e'/%3E%3Cpath d='M23.247 4.966c1.263-.323 2.708.37 3.194 1.6.4.973.124 2.176-.663 2.873a2.85 2.85 0 0 1-3.179.401c-.93-.46-1.54-1.513-1.426-2.552.1-1.116.996-2.07 2.074-2.3' fill='%23802c27'/%3E%3C/svg%3E"); }
+.yahooloco { display: inline-block; width: 1em; height: 1em; }
+.googlemap { display: inline-block; width: 1em; height: 1em; background-size: 1em; background-image: url("data:image/svg+xml,%0A%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 32 32'%3E%3Cg fill-rule='evenodd'%3E%3Cpath d='M.273 29.123V6.347a2.4 2.4 0 0 1 2.398-2.399h22.775z' fill='%231ea361'/%3E%3Cpath d='M.273 29.6v-.478L25.447 3.95h.478a2.4 2.4 0 0 1 2.399 2.398v.48L3.15 32H2.67a2.4 2.4 0 0 1-2.398-2.399' fill='%23fedb43'/%3E%3Cpath d='M3.15 32L14.3 20.852 25.447 32z' fill='%235384c4'/%3E%3Cpath d='M25.447 32L14.298 20.85l2.876-2.877 11.15 11.15v.478A2.4 2.4 0 0 1 25.925 32h-.478z' fill='%23fff'/%3E%3Cpath d='M28.324 29.123l-11.15-11.15 11.15-11.15z' fill='%23c2c2c1'/%3E%3C/g%3E%3Cpath d='M5.276 7.05c1.427-.653 3.213-.387 4.372.682l-1.108 1.1c-1.16-1.15-3.337-.605-3.88.917-.7 1.498.47 3.467 2.14 3.488 1.093.127 2.184-.605 2.415-1.694-.764.001-1.526-.006-2.288.006l-.014-1.413 3.84.052c.096.933.03 1.923-.472 2.74-.787 1.464-2.644 2.104-4.216 1.734-1.943-.403-3.397-2.396-3.132-4.37C3.068 8.9 4 7.627 5.276 7.05' fill='%23efefef'/%3E%3Cpath d='M23.424 0h.912c2.273.13 4.495 1.24 5.872 3.067.902 1.154 1.406 2.586 1.52 4.04v.54c-.053 2.82-1.857 5.134-3.42 7.327-1.754 2.478-3.374 5.18-3.824 8.233-.12.517.024 1.242-.594 1.475-.145-.113-.315-.207-.417-.365-.183-1.707-.6-3.394-1.338-4.953-.827-1.817-1.977-3.46-3.147-5.065-.712-.963-1.383-1.96-1.938-3.024-.872-1.593-1.197-3.475-.84-5.262.292-1.4 1.03-2.72 2.053-3.73C19.64.936 21.503.12 23.424 0m-.177 4.966c-1.078.24-1.983 1.194-2.074 2.3a2.61 2.61 0 0 0 1.426 2.552 2.85 2.85 0 0 0 3.179-.401 2.59 2.59 0 0 0 .663-2.873c-.487-1.218-1.93-1.912-3.194-1.6' fill='%23dc4b3e'/%3E%3Cpath d='M23.247 4.966c1.263-.323 2.708.37 3.194 1.6.4.973.124 2.176-.663 2.873a2.85 2.85 0 0 1-3.179.401c-.93-.46-1.54-1.513-1.426-2.552.1-1.116.996-2.07 2.074-2.3' fill='%23802c27'/%3E%3C/svg%3E"); }
 </style>
 </head>
 <body>

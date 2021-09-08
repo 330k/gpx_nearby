@@ -6,7 +6,7 @@ let shoplist = [];
 let coursepoints = null;
 
 window.addEventListener("DOMContentLoaded", function(){
-  document.getElementById("gpx_file").addEventListener("change", async function(evt){console.log(evt);
+  document.getElementById("gpx_file").addEventListener("change", async function(evt){
     try{
       if(evt.target.files.length !== 1){
         throw new Error("no files / too many files are selected");

@@ -542,7 +542,7 @@ function outputShopList(nearbylist){
       + '<td align="right" data-copy="true">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
       + '<td align="right" data-copy="true">' + s.pointdist.toFixed(0) + '</td>'
       + '<td align="left" data-copy="true" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'
-      + '<td align="left" data-copy="true">' + (s.open ? s.open : '') + '</td>'
+      + '<td align="left" data-copy="true">' + (s.open ? s.open.replace(/\n/g, '<br/>') : '') + '</td>'
     //  + '<td align="left">' + s.source + '</td>'
     //  + '<td align="left">' + s.category + '</td>'
     //  + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'

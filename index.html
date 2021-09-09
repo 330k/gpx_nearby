@@ -466,9 +466,8 @@ function segmentPointDistance3D(ax, ay, az, bx, by, bz, px, py, pz){
  */
 const hubeny = (function(){
   const a = 6378137.0;
-  const b = 6356752.314245;
-  const f2 = b * b / (a * a);
-  const e2 = 1.0 - f2;
+  const f = 1 / 298.257223563;
+  const e2 = f * (2 - f);
   const degree = Math.PI / 180.0;
   const sin = Math.sin;
   const cos = Math.cos;
@@ -481,7 +480,7 @@ const hubeny = (function(){
     const coslatave = cos(latave);
     const w2 = 1.0 - sinlatave * sinlatave * e2;
     const w = sqrt(w2);
-    const meridian = a * f2 / (w2 * w);
+    const meridian = a * (1 - e2) / (w2 * w);
     const n = a / w;
 
     return sqrt(
@@ -499,9 +498,8 @@ const hubeny = (function(){
  */
 const latlon2XYZ = (function(){
   const a = 6378137.0;
-  const b = 6356752.314245;
-  const f2 = b * b / (a * a);
-  const e2 = 1.0 - f2;
+  const f = 1 / 298.257223563;
+  const e2 = f * (2 - f);
   const degree = Math.PI / 180.0;
   const sin = Math.sin;
   const cos = Math.cos;

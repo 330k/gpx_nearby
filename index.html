@@ -5,9 +5,11 @@
 <script>
 let shoplist = [];
 let coursepoints = null;
+let courseboundary = null;
 
 window.addEventListener("DOMContentLoaded", function(){
   document.getElementById("gpx_file").addEventListener("change", async function(evt){
+    // GPXファイルの読み込み
     try{
       if(evt.target.files.length !== 1){
         throw new Error("no files / too many files are selected");
@@ -28,6 +30,10 @@ window.addEventListener("DOMContentLoaded", function(){
       coursepoints = reduceCoursePoints(coursepoints, 1);
       console.timeEnd("reduceCoursePoints");
       console.log("reduced course points: " + coursepoints.length);
+      
+      console.time("getGPXBoundary");
+      courseboundary = getGPXBoundary(coursepoints);
+      console.timeEnd("getGPXBoundary");
       
       searchNearbyShops();
       
@@ -80,18 +86,14 @@ function searchNearbyShops(){
     
     console.time("searchNearbyShops");
     
-    console.time("getGPXBoundary");
-    const boundary = getGPXBoundary(coursepoints);
-    console.timeEnd("getGPXBoundary");
-    
     // 矩形領域で大雑把に絞り込む
     console.time("getShopListInRect");
-    const shoplist2 = getShopListInRect(shoplist, boundary, course_deviation_threshold);
+    const shoplist2 = getShopListInRect(shoplist, courseboundary, course_deviation_threshold);
     console.timeEnd("getShopListInRect");
     console.log("shops in rough rect boundary: " + shoplist2.length);
     
     console.time("getNearbyShops");
-    const nearbylist = getNearbyShops(coursepoints, boundary, shoplist2, course_deviation_threshold, course_between_threshold1, course_between_threshold2);
+    const nearbylist = getNearbyShops(coursepoints, courseboundary, shoplist2, course_deviation_threshold, course_between_threshold1, course_between_threshold2);
     console.timeEnd("getNearbyShops");
     console.log("found shops: " + nearbylist.length);
     //console.log(nearbylist);
@@ -615,7 +617,7 @@ function createShopListTSV(){
 * { margin: 0; padding: 0}
 body { }
 #wrapper {
-  /*max-width: 1280px;
+/*  position: absolute;
   margin: 0 auto 0 auto;*/
 }
 #header {
@@ -625,51 +627,85 @@ body { }
 #header h1 {
   margin: 0 0 0.3em 0;
 }
-#header form {
+#menu {
   display: flex; flex-wrap:wrap; justify-content: space-between;
 }
-#header form > div {
+#menu > div {
   height: 2em;
-  position: relative;
 }
-#header form > div label {
-  padding: 0.3em;
-}
-#header fieldset {
+#menu fieldset {
   border: none;
 }
 
 #file-select {
   display: block;
-  background-color: #aed;
+  background-color: #cef;
   min-width: 30vw;
+  height: 100%;
+  border-radius: 0.5em;
+  margin: 0;
+  padding: 0;
+  vertical-align: middle;
 }
-#file-select input[type=file] { display: none; }
-#file-select .upload-button {
+#file-select:hover {
+  background-color: #aed;
+}
+#file-select input[type=file] {
+  display: none;
+}
+.upload-button {
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  vertical-align: middle;
+  margin-left: 1em;
+  background-size: 1.5em;
+  background-image: url("images/cloudup_icon-icons.com_54402.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+}
+#file-select #gpx_filename {
+  display: inline;
+  line-height: 2em;
+  vertical-align: middle;
+  padding-left: 0.5em;
+}
+
+#route-dev-range {
+  display: inline-block;
+  height: 2em;
+  line-height: 2em;
+  vertical-align: middle;
+}
+
+#route-dev-range label{
+  height: 2em;
+  vertical-align: middle;
+}
+
+.copy-button {
   display: inline-block;
   width: 1.5em;
   height: 1.5em;
   line-height: 1.5em;
   vertical-align: middle;
   padding-left: 0.5em;
-  background-size: 1.5em;
-  background-image: url(images/cloudup_icon-icons.com_54402.svg);
+  background-size: 1em;
+  background-image: url("images/copy-content_icon-icons.com_72793.svg");
   background-repeat: no-repeat;
   background-position: center;
+  cursor: pointer;
 }
-#file-select #gpx_filename {
-  display: inline-block;
-  height: 1.5em;
-  line-height: 1.5em;
-  vertical-align: middle;
-  padding-left: 0.5em;
-}
-
 #copy_clipboard_result {
   height: 100%;
   background-color: #ade;
-  padding: 0.3em;
+  padding: 0.5em;
   border: none;
+  border-radius: 0.5em;
+}
+#copy_clipboard_result:not(:disabled):hover {
+  background-color: #8ae;
 }
 
 #usage { margin: 2em; padding: 2em; border-radius: 1em; border: 1px dashed #ddd;}
@@ -694,14 +730,14 @@ td { border: 0.5px solid #eee; }
 <div id="wrapper">
 <div id="header">
 <h1>GPX ルート沿い施設検索</h1>
-<form>
+<div id="menu">
   <div>
     <label id="file-select">
       <span class="upload-button"></span><input type="file" id="gpx_file" accept=".gpx" /><span id="gpx_filename">GPXファイルを選択してください</span>
     </label>
   </div>
-  <div><fieldset>
-    <legend>検索範囲</legend>
+  <div>
+    <label id="route-dev-range">検索範囲
     <select id="course_deviation_threshold">
     <option value="100">&lt;100 m</option>
     <option value="200">&lt;200 m</option>
@@ -709,7 +745,7 @@ td { border: 0.5px solid #eee; }
     <option value="500">&lt;500 m</option>
     <option value="1000">&lt;1000 m</option>
     </select>
-    </label></fieldset>
+    </label>
   </div>
   <!--<div><fieldset>
     <legend>検索対象</legend>
@@ -717,9 +753,9 @@ td { border: 0.5px solid #eee; }
     <label><input type="checkbox" name="search_target" value="道の駅" checked />道の駅</label></fieldset>
   </div>-->
   <div>
-    <button id="copy_clipboard_result" disabled>結果をクリップボードにコピー</button>
+    <button id="copy_clipboard_result" disabled><span class="copy-button"></span>結果をクリップボードにコピー</button>
   </div>
-</form>
+</div>
 </div>
 <div id="result">
  <div id="usage">

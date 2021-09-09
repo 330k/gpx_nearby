@@ -669,7 +669,7 @@ body { }
   display: inline;
   line-height: 2em;
   vertical-align: middle;
-  padding-left: 0.5em;
+  padding: 0 0.5em;
 }
 
 #route-dev-range {
@@ -678,12 +678,24 @@ body { }
   line-height: 2em;
   vertical-align: middle;
 }
-
-#route-dev-range label{
+#route-dev-range label {
   height: 2em;
   vertical-align: middle;
 }
+#route-dev-range select {
+  height: 2em;
+}
 
+#copy_clipboard_result {
+  height: 100%;
+  background-color: #ade;
+  padding: 0.5em;
+  border: none;
+  border-radius: 0.5em;
+}
+#copy_clipboard_result:not(:disabled):hover {
+  background-color: #8ae;
+}
 .copy-button {
   display: inline-block;
   width: 1.5em;
@@ -696,16 +708,6 @@ body { }
   background-repeat: no-repeat;
   background-position: center;
   cursor: pointer;
-}
-#copy_clipboard_result {
-  height: 100%;
-  background-color: #ade;
-  padding: 0.5em;
-  border: none;
-  border-radius: 0.5em;
-}
-#copy_clipboard_result:not(:disabled):hover {
-  background-color: #8ae;
 }
 
 #usage { margin: 2em; padding: 2em; border-radius: 1em; border: 1px dashed #ddd;}
@@ -761,9 +763,9 @@ td { border: 0.5px solid #eee; }
  <div id="usage">
   <h2>使い方</h2>
   <ol>
-   <li>「ファイルを選択」からGPXファイルを指定すると、ルート沿いの施設を検索します。</li>
+   <li>「GPXファイルを選択してください」ボタンからGPXファイルを指定すると、ルート沿いの施設を検索します。</li>
    <li>ルートからどれだけ離れた施設まで検索するかは「ルートからの距離」を選択することで変更できます。</li>
-   <li>「結果をクリップボードにコピー」ボタンをクリックすると結果の表をExcelやスプレッドシートに貼り付けられる形式でコピーします。</li>
+   <li>「コピー」ボタンをクリックすると結果の表をExcelやスプレッドシートに貼り付けられる形式でコピーします。</li>
   </ol>
   <h2>データソース</h2>
   <ul>

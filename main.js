@@ -101,6 +101,8 @@ function searchNearbyShops(){
     outputShopList(nearbylist);
     
     document.getElementById("copy_clipboard_result").disabled = false;
+
+    notifyResize();
     
   }catch(err){
     console.error(err);
@@ -717,4 +719,17 @@ function divideSegment(lat1, lon1, lat2, lon2, N){
   }
 
   return result;
+}
+
+/**
+ * iframeで埋め込まれたときに親ウィンドウに自身の高さ情報を渡し、リサイズを要求
+ */
+ function notifyResize(){
+  const target = parent.postMessage ? parent : (parent.document.postMessage ? parent.document : undefined);
+  if (typeof target !== "undefined") {
+    target.postMessage(JSON.stringify({
+      "message": "resize",
+      "height": document.body.scrollHeight
+    }), "*");
+  }
 }

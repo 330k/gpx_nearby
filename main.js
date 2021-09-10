@@ -6,6 +6,8 @@ window.addEventListener("DOMContentLoaded", function(){
   // iframeから読み込まれたときはh1タグを非表示
   if(window !== window.parent){
     document.querySelector("h1").style.display = "none";
+    document.getElementById("copy_clipboard_result").style.display = "none";
+    notifyResize();
   }
 
   document.getElementById("gpx_file").addEventListener("change", async function(evt){

@@ -109,6 +109,79 @@ function searchNearbyShops(){
 }
 
 /**
+ * 結果を画面に出力
+ */
+ function outputShopList(nearbylist){
+  const ele = document.getElementById('result');
+  const buf = [];
+  
+  const gmaplink = function(s){
+    return '<a href="https://www.google.co.jp/maps?q=' + s.lat.toFixed(6) + ',' + s.lon.toFixed(6) + '" target="_blank" class="googlemap">' + '</a>';
+  };
+  const infolink = function(s){
+    if(s.url){
+      return '<a href="' + s.url + '" target="_blank" class="infolink"></a>';
+    }else{
+      return '';
+    }
+  };
+  
+  buf.push('<table class="pure-table pure-table-bordered">');
+  buf.push('<thead><tr>');
+  buf.push('<th data-copy="true">ルート距離 [km]</th>');
+  buf.push('<th data-copy="true">ルートからの距離 [m]</th>');
+  buf.push('<th data-copy="true">施設名</th>');
+  buf.push('<th data-copy="true">営業時間</th>');
+  //buf.push('<th>データソース</th>');
+  //buf.push('<th>カテゴリ</th>');
+  //buf.push('<th>緯度経度</th>');
+  buf.push('<th>情報</th>');
+  buf.push('</tr></thead>');
+  buf.push('<tbody>');
+  
+  for(const s of nearbylist.values()){
+    buf.push('<tr>'
+      + '<td align="right" data-copy="true">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
+      + '<td align="right" data-copy="true">' + s.pointdist.toFixed(0) + '</td>'
+      + '<td align="left" data-copy="true" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'
+      + '<td align="left" data-copy="true">' + (s.open ? s.open.replace(/\n/g, '<br/>') : '') + '</td>'
+    //  + '<td align="left">' + s.source + '</td>'
+    //  + '<td align="left">' + s.category + '</td>'
+    //  + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
+      + '<td align="center">' + infolink(s) + ' ' + gmaplink(s) + '</td>'
+      + '</tr>'
+    );
+  }
+  
+  buf.push('</tbody></table>');
+  
+  ele.innerHTML = buf.join('\n');
+}
+
+/**
+ * HTMLテーブルの内容をTSVに変換
+ * @return {string}
+ */
+function createShopListTSV(){
+  const buf = [];
+  const ele_result = document.getElementById("result");
+  
+  for(const tr of ele_result.querySelectorAll("tr")){
+    const buf2 = [];
+    for(const td of tr.querySelectorAll("th,td")){
+      if(td.dataset.copy){
+        buf2.push("\"" + td.textContent.replace("\"", "\\\"") + "\"");
+      }
+    }
+    if(buf2.length){
+      buf.push(buf2.join("\t"));
+    }
+  }
+  
+  return buf.join("\n");
+}
+
+/**
  * GPXファイルを読み込むPromiseを返す
  * @param {string} file 読み込むファイル
  * @return {XMLDocument} 読み込んだ結果をXMLObjectを返すPromise
@@ -133,23 +206,64 @@ function readGPX(file){
 /**
  * GPXデータから計算用のコースデータを作成
  * @param {XMLDocument} gpx
+ * @param {number=20000} max_dist_threshold 2地点間を分割しない最大距離
  * @return {[{lat:number,lon:number,dist:number}]}
  */
-function createCoursePoints(gpx){
+function createCoursePoints(gpx, max_dist_threshold = 20000){
   const trkpts = gpx.querySelectorAll("trkpt");
   const result = [];
   let coursedist = 0.0;
-  
-  for(let i = 0; i < trkpts.length; i++){
+  let c = 0;
+  let plat = trkpts[0].getAttribute("lat") - 0;
+  let plon = trkpts[0].getAttribute("lon") - 0;
+  let XYZ = latlon2XYZ(plat, plon);
+
+  // 最初の1点
+  result.push({
+    "index": 0,
+    "lat": plat,
+    "lon": plon,
+    "dist": coursedist,
+    "X": XYZ.X,
+    "Y": XYZ.Y,
+    "Z": XYZ.Z,
+  });
+
+  for(let i = 1; i < trkpts.length; i++){
     const lat = trkpts[i].getAttribute("lat") - 0;
     const lon = trkpts[i].getAttribute("lon") - 0;
-    const XYZ = latlon2XYZ(lat, lon);
-    if(i > 0){
-      coursedist += hubeny(result[result.length - 1].lat, result[result.length - 1].lon, lat, lon);
-    }
+    const dist = hubeny(plat, plon, lat, lon);
+
+    // ポイント間距離が空きすぎている場合は分割する
+    const N = Math.floor(dist / max_dist_threshold) + 1;
     
+    if(N >= 2){
+      console.log("divide " + N + ", dist: " + dist);
+      const m = divideSegment(plat, plon, lat, lon, N);
+      for(let j = 1; j < m.length; j++){
+        let XYZ = latlon2XYZ(m[j].lat, m[j].lon);
+        coursedist += hubeny(m[j - 1].lat, m[j - 1].lon, m[j].lat, m[j].lon);
+        c++;
+        result.push({
+          "index": c,
+          "lat": m[j].lat,
+          "lon": m[j].lon,
+          "dist": coursedist,
+          "X": XYZ.X,
+          "Y": XYZ.Y,
+          "Z": XYZ.Z,
+        });
+      }
+      coursedist += hubeny(m[m.length - 1].lat, m[m.length - 1].lon, lat, lon);
+
+    }else{
+      coursedist += dist;
+    }
+
+    let XYZ = latlon2XYZ(lat, lon);
+    c++;
     result.push({
-      "index": i,
+      "index": c,
       "lat": lat,
       "lon": lon,
       "dist": coursedist,
@@ -157,6 +271,9 @@ function createCoursePoints(gpx){
       "Y": XYZ.Y,
       "Z": XYZ.Z,
     });
+
+    plat = lat;
+    plon = lon;
   }
   
   return result;
@@ -164,7 +281,7 @@ function createCoursePoints(gpx){
 
 /**
  * 3次元Douglas-Peuckerでコースの点を間引く
- * @param {[{lat:number,lon:number}]} coursepoints コースデータ
+ * @param {[{lat:number,lon:number,X:number,Y:number,Z:number,dist:number}]} coursepoints コースデータ
  * @param {number} threshold 許容誤差[m]
  * @return {[{lat:number,lon:number}]} 間引かれたコースデータ
  */
@@ -215,7 +332,7 @@ function reduceCoursePoints(coursepoints, threshold){
 
 /**
  * GPXデータの緯度経度の領域を調べる
- * @param {[{lat:number,lon:number}]} coursepoints コースデータ
+ * @param {[{lat:number,lon:number,X:number,Y:number,Z:number,dist:number}]} coursepoints コースデータ
  * @return {{minlat:number,maxlat:number,minlon:number,maxlon:number}} 矩形領域
  */
 function getGPXBoundary(coursepoints){
@@ -264,13 +381,13 @@ function getShopListInRect(shoplist, boundary, course_deviation_threshold){
 
 /**
  * 近傍の店舗を抜き出す
- * @param {[{lat:number,lon:number}]} coursepoints コースデータ
+ * @param {[{lat:number,lon:number,X:number,Y:number,Z:number,dist:number}]} coursepoints コースデータ
  * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} boundary 矩形領域
  * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
  * @param {number} course_deviation_threshold コース-施設間の許容距離[m]
  * @param {number} course_between_threshold1 同一の施設を同一の区間として結合して扱うコース距離[m]
  * @param {number} course_between_threshold2 同一の施設を別物として追加するコース距離[m]
- * @return {[{coursedist:number,lat:number,lon:number,pointdist:number,name:string}]} コース距離順に並べられた近隣店舗リスト
+ * @return {[{dist:number,lat:number,lon:number,pointdist:number,name:string}]} コース距離順に並べられた近隣店舗リスト
  */
 function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_threshold, course_between_threshold1, course_between_threshold2){
   const result = [];
@@ -523,74 +640,74 @@ const latlon2XYZ = (function(){
 })();
 
 /**
- * 結果を画面に出力
+ * 地心直交座標系から緯度経度に変換
+ * @param {number} X
+ * @param {number} Y
+ * @param {number} Z
+ * @return {{lat:number,lon:number}}
  */
-function outputShopList(nearbylist){
-  const ele = document.getElementById('result');
-  const buf = [];
+const xyz2LatLon = (function(){
+  const a = 6378137.0;
+  const f = 1 / 298.257223563;
+  const e2 = f * (2 - f);
+  const degree = Math.PI / 180.0;
+  const sin = Math.sin;
+  const cos = Math.cos;
+  const sqrt = Math.sqrt;
+  const atan = Math.atan;
+  const atan2 = Math.atan2;
+  const abs = Math.abs;
   
-  const gmaplink = function(s){
-    return '<a href="https://www.google.co.jp/maps?q=' + s.lat.toFixed(6) + ',' + s.lon.toFixed(6) + '" target="_blank" class="googlemap">' + '</a>';
-  };
-  const infolink = function(s){
-    if(s.url){
-      return '<a href="' + s.url + '" target="_blank" class="infolink"></a>';
-    }else{
-      return '';
+  return function(X, Y, Z){
+    const P = sqrt(X * X + Y * Y);
+    let lat;
+    let lat2;
+    let lon;
+    
+    lat = atan(Z / P);
+    for(let i = 0; i < 30; i++){
+      lat2 = atan(Z / (P - e2 * (a / sqrt(1 - (sin(lat) ** 2) * e2) * cos(lat))));
+      if(abs(lat2 - lat) < 1e-12){
+        lat = lat2;
+        break;
+      }
+      lat = lat2;
     }
+    
+    lon = atan2(Y, X);
+    
+    return {
+      "lat": lat / degree,
+      "lon": lon / degree
+    };
   };
-  
-  buf.push('<table class="pure-table pure-table-bordered">');
-  buf.push('<thead><tr>');
-  buf.push('<th data-copy="true">ルート距離 [km]</th>');
-  buf.push('<th data-copy="true">ルートからの距離 [m]</th>');
-  buf.push('<th data-copy="true">施設名</th>');
-  buf.push('<th data-copy="true">営業時間</th>');
-  //buf.push('<th>データソース</th>');
-  //buf.push('<th>カテゴリ</th>');
-  //buf.push('<th>緯度経度</th>');
-  buf.push('<th>情報</th>');
-  buf.push('</tr></thead>');
-  buf.push('<tbody>');
-  
-  for(const s of nearbylist.values()){
-    buf.push('<tr>'
-      + '<td align="right" data-copy="true">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
-      + '<td align="right" data-copy="true">' + s.pointdist.toFixed(0) + '</td>'
-      + '<td align="left" data-copy="true" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'
-      + '<td align="left" data-copy="true">' + (s.open ? s.open.replace(/\n/g, '<br/>') : '') + '</td>'
-    //  + '<td align="left">' + s.source + '</td>'
-    //  + '<td align="left">' + s.category + '</td>'
-    //  + '<td align="right">' + s.lat.toFixed(6) + ' ' + s.lon.toFixed(6) + '</td>'
-      + '<td align="center">' + infolink(s) + ' ' + gmaplink(s) + '</td>'
-      + '</tr>'
-    );
-  }
-  
-  buf.push('</tbody></table>');
-  
-  ele.innerHTML = buf.join('\n');
-}
+})();
 
 /**
- * HTMLテーブルの内容をTSVに変換
- * @return {string}
+ * 測地線を分割(地心直交座標系で近似的に分割)したときの中間点の配列を返す
+ * @param {number} lat1 
+ * @param {number} lon1 
+ * @param {number} lat2 
+ * @param {number} lon2 
+ * @param {number} N 分割数
+ * @return {[{lat:number,lon:number}]}
  */
-function createShopListTSV(){
-  const buf = [];
-  const ele_result = document.getElementById("result");
-  
-  for(const tr of ele_result.querySelectorAll("tr")){
-    const buf2 = [];
-    for(const td of tr.querySelectorAll("th,td")){
-      if(td.dataset.copy){
-        buf2.push("\"" + td.textContent.replace("\"", "\\\"") + "\"");
-      }
-    }
-    if(buf2.length){
-      buf.push(buf2.join("\t"));
-    }
+function divideSegment(lat1, lon1, lat2, lon2, N){
+  const XYZ1 = latlon2XYZ(lat1, lon1);
+  const XYZ2 = latlon2XYZ(lat2, lon2);
+  const result = [{
+    "lat": lat1,
+    "lon": lon1
+  }];
+
+  for(let i = 1; i < N; i++){
+    const t = i / N;
+    const x = XYZ1.X * (1 - t) + XYZ2.X * t;
+    const y = XYZ1.Y * (1 - t) + XYZ2.Y * t;
+    const z = XYZ1.Z * (1 - t) + XYZ2.Z * t;
+
+    result.push(xyz2LatLon(x, y, z));
   }
-  
-  return buf.join("\n");
+
+  return result;
 }

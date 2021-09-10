@@ -207,7 +207,7 @@ function readGPX(file){
  * @param {number=20000} max_dist_threshold 2地点間を分割しない最大距離
  * @return {[{lat:number,lon:number,dist:number}]}
  */
-function createCoursePoints(gpx, max_dist_threshold = 20000){
+function createCoursePoints(gpx, max_dist_threshold = 10000){
   const trkpts = gpx.querySelectorAll("trkpt");
   const result = [];
   let coursedist = 0.0;

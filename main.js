@@ -76,8 +76,6 @@ function searchNearbyShops(){
     
     document.getElementById("loader").style.display = "block";
     const course_deviation_threshold = document.getElementById("course_deviation_threshold").value - 0;
-    const course_between_threshold1 = 1000.0;
-    const course_between_threshold2 = 10000.0;
     
     console.time("searchNearbyShops");
     
@@ -88,7 +86,7 @@ function searchNearbyShops(){
     console.log("shops in rough rect boundary: " + shoplist2.length);
     
     console.time("getNearbyShops");
-    const nearbylist = getNearbyShops(coursepoints, courseboundary, shoplist2, course_deviation_threshold, course_between_threshold1, course_between_threshold2);
+    const nearbylist = getNearbyShops(coursepoints, courseboundary, shoplist2, course_deviation_threshold);
     console.timeEnd("getNearbyShops");
     console.log("found shops: " + nearbylist.length);
     //console.log(nearbylist);
@@ -217,6 +215,10 @@ function createCoursePoints(gpx, max_dist_threshold = 20000){
   let plat = trkpts[0].getAttribute("lat") - 0;
   let plon = trkpts[0].getAttribute("lon") - 0;
   let XYZ = latlon2XYZ(plat, plon);
+
+  if(trkpts.length === 0){
+    return result;
+  }
 
   // 最初の1点
   result.push({
@@ -385,11 +387,11 @@ function getShopListInRect(shoplist, boundary, course_deviation_threshold){
  * @param {{minlat:number,maxlat:number,minlon:number,maxlon:number}} boundary 矩形領域
  * @param {[{id:string,lat:number,lon:number,name:string}]} shoplist 店舗リスト
  * @param {number} course_deviation_threshold コース-施設間の許容距離[m]
- * @param {number} course_between_threshold1 同一の施設を同一の区間として結合して扱うコース距離[m]
- * @param {number} course_between_threshold2 同一の施設を別物として追加するコース距離[m]
+ * @param {number=1000} course_between_threshold1 同一の施設を同一の区間として結合して扱うコース距離[m]
+ * @param {number=10000} course_between_threshold2 同一の施設を別物として追加するコース距離[m]
  * @return {[{dist:number,lat:number,lon:number,pointdist:number,name:string}]} コース距離順に並べられた近隣店舗リスト
  */
-function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_threshold, course_between_threshold1, course_between_threshold2){
+function getNearbyShops(coursepoints, boundary, shoplist, course_deviation_threshold, course_between_threshold1 = 1000, course_between_threshold2 = 10000){
   const result = [];
   
   // Cell Lists Algorithm - 各線分の位置を整数個のcellに分類

@@ -3,6 +3,11 @@ let coursepoints = null;
 let courseboundary = null;
 
 window.addEventListener("DOMContentLoaded", function(){
+  // iframeから読み込まれたときはh1タグを非表示
+  if(window !== window.parent){
+    document.querySelector("h1").style.display = "none";
+  }
+
   document.getElementById("gpx_file").addEventListener("change", async function(evt){
     // GPXファイルの読み込み
     try{
@@ -606,8 +611,8 @@ const hubeny = (function(){
 
 /**
  * 緯度経度から地心直交座標系(X, Y, Z)に変換
- * @param {number} lat1
- * @param {number} lon1
+ * @param {number} lat1 緯度
+ * @param {number} lon1 経度
  * @return {{X:number,Y:number,Z:number}}
  */
 const latlon2XYZ = (function(){
@@ -686,7 +691,7 @@ const xyz2LatLon = (function(){
 })();
 
 /**
- * 測地線を分割(地心直交座標系で近似的に分割)したときの中間点の配列を返す
+ * 測地線を分割(地心直交座標系で近似的に分割)したときの中間点の緯度経度の配列を返す
  * @param {number} lat1 
  * @param {number} lon1 
  * @param {number} lat2 

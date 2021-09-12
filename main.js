@@ -651,7 +651,7 @@ const latlon2XYZ = (function(){
 })();
 
 /**
- * 地心直交座標系から緯度経度に変換
+ * 地心直交座標系から緯度経度に変換 (Bowring式)
  * @param {number} X
  * @param {number} Y
  * @param {number} Z
@@ -661,6 +661,7 @@ const xyz2LatLon = (function(){
   const a = 6378137.0;
   const f = 1 / 298.257223563;
   const e2 = f * (2 - f);
+  const e2p = e2 / (1 - e2);
   const degree = Math.PI / 180.0;
   const sin = Math.sin;
   const cos = Math.cos;
@@ -671,21 +672,9 @@ const xyz2LatLon = (function(){
   
   return function(X, Y, Z){
     const P = sqrt(X * X + Y * Y);
-    let lat;
-    let lat2;
-    let lon;
-    
-    lat = atan(Z / P);
-    for(let i = 0; i < 30; i++){
-      lat2 = atan(Z / (P - e2 * (a / sqrt(1 - (sin(lat) ** 2) * e2) * cos(lat))));
-      if(abs(lat2 - lat) < 1e-12){
-        lat = lat2;
-        break;
-      }
-      lat = lat2;
-    }
-    
-    lon = atan2(Y, X);
+    const theta = atan2(Z, (1.0 - f) * P);
+    const lat = atan2(Z + e2p * a * (1.0 - f) * (sin(theta) ** 3), P - e2 * a * (cos(theta) ** 3));
+    const lon = atan2(Y, X);
     
     return {
       "lat": lat / degree,

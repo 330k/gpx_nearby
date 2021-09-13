@@ -2,6 +2,33 @@ let shoplist = [];
 let coursepoints = null;
 let courseboundary = null;
 
+// JSONの店舗一覧データを読み込む
+const datafiles = [
+  "./data/seven-eleven-all.json",
+  "./data/lawson-all.json",
+  "./data/famima-all.json",
+  "./data/ministop.json",
+  "./data/seicomart.json",
+  /*"./data/yahoo_0205001.js",
+  "./data/yahoo_0205002.js",
+  "./data/yahoo_0202001.js",
+  "./data/yahoo_0304001.js",
+  "./data/yahoo_0307003.js",
+  "./data/osm_japan_convenience_001.js",
+  "./data/mlit.js",*/
+  "./data/wikipedia_roadstation.json"
+];
+
+Promise.all(
+  datafiles.map((e) => fetch(e).then((result) => result.json()))
+).then((results) => {
+  results.forEach((e) => shoplist.push(...e));
+  document.getElementById("loader").style.display = "none";
+}).catch((e) => {
+  document.getElementById("loader").style.display = "none";
+});
+
+// イベントリスナー登録
 window.addEventListener("DOMContentLoaded", function(){
   // iframeから読み込まれたときはh1タグを非表示
   if(window !== window.parent){
@@ -61,8 +88,6 @@ window.addEventListener("DOMContentLoaded", function(){
     evt.preventDefault();
     return false;
   });
-  
-  document.getElementById("loader").style.display = "none";
 });
 
 /**
@@ -146,8 +171,9 @@ function searchNearbyShops(){
   buf.push('</tr></thead>');
   buf.push('<tbody>');
   
-  for(const s of nearbylist.values()){
-    buf.push('<tr>'
+  for(let i = 0; i < nearbylist.length; i++){
+    const s = nearbylist[i];
+    buf.push('<tr class="' + ((i % 2) ? 'odd' : 'even') + '">'
       + '<td align="right" data-copy="true">' + (s.coursedist * 0.001).toFixed(1) + '</td>'
       + '<td align="right" data-copy="true">' + s.pointdist.toFixed(0) + '</td>'
       + '<td align="left" data-copy="true" title="' + JSON.stringify(s).replace(/"/g, "'") + '">' + s.name + '</td>'

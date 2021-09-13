@@ -3,18 +3,6 @@
 <meta charset="utf-8">
 <title>GPX ルート沿い施設検索ツール</title>
 <script defer src="main.js"></script>
-<script defer src="data/seven-eleven-all.js"></script>
-<script defer src="data/lawson-all.js"></script>
-<script defer src="data/famima-all.js"></script>
-<script defer src="data/seicomart.js"></script>
-<!--<script defer src="data/yahoo_0205001.js"></script>-->
-<!--<script defer src="data/yahoo_0205002.js"></script>-->
-<!--<script defer src="data/yahoo_0202001.js"></script>-->
-<!--<script defer src="data/yahoo_0304001.js"></script>-->
-<!--<script defer src="data/yahoo_0307003.js"></script>-->
-<script defer src="data/wikipedia_roadstation.js"></script>
-<!--<script defer src="data/osm_japan_convenience_001.js"></script>-->
-<!--<script defer src="data/mlit.js"></script>-->
 <!--<link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">-->
 <!--<meta name="viewport" content="width=device-width">-->
 <meta name="viewport" content="width=640">
@@ -126,8 +114,10 @@
 table { /*width: 100%;*/ border-collapse: separate; border-spacing: 0; margin: 0 auto 0 auto; }
 thead { position: sticky; top: 0; z-index: 1; background: white;}
 tbody { overflow: scroll; }
-th { border: 0.5px solid #ddd; background: #ddd; }
-td { border: 0.5px solid #eee; }
+th { border: 1px solid #ddd; padding: 1px; background: #ddd; }
+td { border: 0px solid transparent; padding: 1px; }
+.odd { background-color: #f8f8f8}
+.even { background-color: #fff}
 
 .infolink { display: inline-block; width: 1em; height: 1em; background-size: 1em; background-image: url("images/infoflat_105980.svg"); }
 .googlemap { display: inline-block; width: 1em; height: 1em; background-size: 1em; background-image: url("images/google_maps_logo_icon_170064.svg"); }

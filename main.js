@@ -1,23 +1,28 @@
+const params = JSON.parse(decodeURIComponent(location.search.substr(1)).replace("=",":"));
 let shoplist = [];
 let coursepoints = null;
 let courseboundary = null;
 
 // JSONの店舗一覧データを読み込む
 const datafiles = [
+  "./data/yahoo_0205001.json",
+  /*"./data/yahoo_0205002.json",
+  "./data/yahoo_0202001.json",
+  "./data/yahoo_0304001.json",
+  "./data/yahoo_0307003.json",
+  "./data/osm_japan_convenience_001.json",
   "./data/seven-eleven-all.json",
   "./data/lawson-all.json",
   "./data/famima-all.json",
   "./data/ministop.json",
   "./data/seicomart.json",
-  /*"./data/yahoo_0205001.js",
-  "./data/yahoo_0205002.js",
-  "./data/yahoo_0202001.js",
-  "./data/yahoo_0304001.js",
-  "./data/yahoo_0307003.js",
-  "./data/osm_japan_convenience_001.js",
-  "./data/mlit.js",*/
+  "./data/mlit.json",*/
   "./data/wikipedia_roadstation.json"
 ];
+if(params.shopdata){
+  datafiles.length = 0;
+  params.shopdata.map((e) => datafiles.push(e));
+}
 
 Promise.all(
   datafiles.map((e) => fetch(e).then((result) => result.json()))
@@ -25,10 +30,11 @@ Promise.all(
   results.forEach((e) => shoplist.push(...e));
   document.getElementById("loader").style.display = "none";
 }).catch((e) => {
+  console.error('JSON Data not loaded');
   document.getElementById("loader").style.display = "none";
 });
 
-// イベントリスナー登録
+// イベントリスナ登録
 window.addEventListener("DOMContentLoaded", function(){
   // iframeから読み込まれたときはh1タグを非表示
   if(window !== window.parent){

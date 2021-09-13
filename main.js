@@ -1,7 +1,13 @@
-const params = JSON.parse(decodeURIComponent(location.search.substr(1)).replace("=",":"));
+let params = {};
 let shoplist = [];
 let coursepoints = null;
 let courseboundary = null;
+
+try{
+  params = JSON.parse(decodeURIComponent(location.search.substr(1)).replace("=",":"));
+}catch(err){
+
+}
 
 // JSONの店舗一覧データを読み込む
 const datafiles = [

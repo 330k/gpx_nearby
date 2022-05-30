@@ -11,19 +11,21 @@ try{
 
 // JSONの店舗一覧データを読み込む
 const datafiles = [
-  "./data/yahoo_0205001.json",
-  /*"./data/yahoo_0205002.json",
-  "./data/yahoo_0202001.json",
-  "./data/yahoo_0304001.json",
-  "./data/yahoo_0307003.json",
-  "./data/osm_japan_convenience_001.json",
-  "./data/seven-eleven-all.json",
-  "./data/lawson-all.json",
-  "./data/famima-all.json",
+  "./data/yahoo_0115004.json",
+  //"./data/yahoo_0115011.json",
+  //"./data/yahoo_0205001.json",
+  //"./data/yahoo_0205002.json",
+  //"./data/yahoo_0202001.json",
+  //"./data/yahoo_0304001.json",
+  //"./data/yahoo_0307003.json",
+  /*"./data/osm_japan_convenience_001.json",*/
+  "./data/seven-eleven.json",
+  "./data/lawson.json",
+  "./data/familymart.json",
   "./data/ministop.json",
   "./data/seicomart.json",
-  "./data/mlit.json",*/
-  "./data/wikipedia_roadstation.json"
+  //"./data/mlit.json",*/
+  //"./data/wikipedia_roadstation.json"
 ];
 if(params.shopdata){
   datafiles.length = 0;
@@ -100,6 +102,14 @@ window.addEventListener("DOMContentLoaded", function(){
     evt.preventDefault();
     return false;
   });
+  
+  document.getElementById("show_map").addEventListener("click", function(evt){
+    document.getElementById("map_wrapper").style.display = "block";
+    window.googlemap.map.fitBounds(new google.maps.LatLngBounds({lat: courseboundary.minlat, lng: courseboundary.minlon}, {lat: courseboundary.maxlat, lng: courseboundary.maxlon}));
+  });
+  document.getElementById("map_wrapper").addEventListener("click", function(evt){
+    document.getElementById("map_wrapper").style.display = "none";
+  });
 });
 
 /**
@@ -138,7 +148,9 @@ function searchNearbyShops(){
     console.timeEnd("searchNearbyShops");
     
     outputShopList(nearbylist);
+    drawMap(coursepoints, courseboundary, nearbylist);
     
+    document.getElementById("show_map").disabled = false;
     document.getElementById("copy_clipboard_result").disabled = false;
 
     notifyResize();
@@ -753,7 +765,7 @@ function divideSegment(lat1, lon1, lat2, lon2, N){
 /**
  * iframeで埋め込まれたときに親ウィンドウに自身の高さ情報を渡し、リサイズを要求
  */
- function notifyResize(){
+function notifyResize(){
   const target = parent.postMessage ? parent : (parent.document.postMessage ? parent.document : undefined);
   if (typeof target !== "undefined") {
     target.postMessage(JSON.stringify({
@@ -761,4 +773,55 @@ function divideSegment(lat1, lon1, lat2, lon2, N){
       "height": document.body.scrollHeight
     }), "*");
   }
+}
+
+
+function initMap(){
+  console.log("init Maps");
+  window.googlemap = {
+    map: null,
+    markers: [],
+    polyline: null
+  };
+  window.googlemap.map = new google.maps.Map(document.getElementById('map_canvas'), {
+    zoom: 6,
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+    center: new google.maps.LatLng(35.681382, 139.766084)
+  });
+  
+  document.getElementById("map_canvas").addEventListener("click", function(evt){
+    evt.stopPropagation();
+  });
+}
+
+function drawMap(coursepoints, courseboundary, nearbylist){
+  for(const m of window.googlemap.markers){
+    m.setMap(null);
+  }
+  if(window.googlemap.polyline){
+    window.googlemap.polyline.setMap(null);
+  }
+  
+  for(const s of nearbylist){
+    window.googlemap.markers.push(new google.maps.Marker({
+      position: {lat: s.lat, lng: s.lon},
+      title: s.name,
+      map: window.googlemap.map,
+    }));
+  }
+  
+  const line = [];
+  
+  for(const s of coursepoints){
+    line.push({lat: s.lat, lng: s.lon});
+  }
+  window.googlemap.polyline = new google.maps.Polyline({
+    path: line,
+    strokeColor: "#FF0000",
+    strokeOpacity: 1,
+    strokeWeight: 2,
+    zIndex: 100,
+    clickable: false,
+    map: window.googlemap.map
+  });
 }
